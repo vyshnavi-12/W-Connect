@@ -355,7 +355,10 @@ const LandingPage = () => {
                 ))}
               </div>
 
-              <button className="w-full bg-yellow-500 hover:bg-yellow-600 text-white py-3 px-6 rounded-lg font-semibold transition-all duration-300 hover:scale-105 shadow-lg hover:shadow-xl">
+              <button
+                onClick={() => navigate("/consumer-register")}
+                className="w-full bg-yellow-500 hover:bg-yellow-600 text-white py-3 px-6 rounded-lg font-semibold transition-all duration-300 hover:scale-105 shadow-lg hover:shadow-xl"
+              >
                 Login as Consumer
               </button>
             </div>

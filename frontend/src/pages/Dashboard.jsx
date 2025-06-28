@@ -1,11 +1,8 @@
 // src/pages/Dashboard.jsx
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import Header from '../components/Header';
 
 const Dashboard = () => {
-  const navigate = useNavigate();
-
-  // Helper function to decode JWT token
   const getDecodedToken = () => {
     const token = localStorage.getItem('token');
     if (!token) return null;
@@ -22,30 +19,21 @@ const Dashboard = () => {
   };
 
   const decodedToken = getDecodedToken();
-  const shopName = decodedToken?.shopName || 'Provider'; // Get shopName from token
-
-  const handleLogout = () => {
-    // Remove token from localStorage
-    localStorage.removeItem('token');
-    // Redirect to login page
-    navigate('/login');
-  };
+  const shopName = decodedToken?.shopName || 'Provider';
 
   return (
-    <div className="w-screen h-screen flex items-center justify-center bg-gray-100">
-      <div className="bg-white p-8 rounded-lg shadow-md text-center max-w-md w-full">
-        <h1 className="text-2xl font-bold text-blue-700 mb-4">
-          Welcome <span className="capitalize">{shopName}</span> to W-Connect
-        </h1>
-        <p className="text-gray-600 mb-6">You are logged in successfully!</p>
-
-        <button
-          onClick={handleLogout}
-          className="w-full py-2 px-4 bg-red-500 text-white font-semibold rounded hover:bg-red-600 transition duration-200"
-        >
-          Logout
-        </button>
-      </div>
+    <div className="w-screen h-screen flex flex-col bg-gray-100">
+      <Header />
+      <main className="flex-grow flex items-center justify-center p-4">
+        <div className="bg-white p-8 rounded-xl shadow-md text-center w-full h-full flex items-center justify-center">
+          <div>
+            <h1 className="text-3xl font-bold text-blue-700 mb-4">
+              Welcome <span className="capitalize">{shopName}</span> to W-Connect
+            </h1>
+            <p className="text-gray-600 text-base">You are logged in successfully!</p>
+          </div>
+        </div>
+      </main>
     </div>
   );
 };
