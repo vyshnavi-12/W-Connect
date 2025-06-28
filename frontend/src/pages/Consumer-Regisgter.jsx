@@ -1,10 +1,20 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Building2, MapPin, Mail, Key, Check, ArrowLeft } from "lucide-react";
+import {
+  Building2,
+  MapPin,
+  Mail,
+  Key,
+  Check,
+  ArrowLeft,
+  Search,
+  Loader2,
+} from "lucide-react";
+import axios from "axios";
 
 const ConsumerRegister = () => {
   const navigate = useNavigate();
-  // State for form data
+
   const [formData, setFormData] = useState({
     shopName: "",
     location: "",
@@ -16,34 +26,21 @@ const ConsumerRegister = () => {
     storageRequired: false,
   });
 
-  // State for providers
-  const [providers, setProviders] = useState([]);
-
-  // State for errors
+  const [filteredProviders, setFilteredProviders] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [noProvidersFound, setNoProvidersFound] = useState(false);
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
 
-  // Initialize providers
-  useEffect(() => {
-    setProviders([
-      "Walmart Central",
-      "Local Hub A",
-      "Warehouse B",
-      "Store C",
-      "Depot D",
-    ]);
-  }, []);
-
-  // Handle input change
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
+
     setFormData((prev) => ({
       ...prev,
       [name]: type === "checkbox" ? checked : value,
     }));
 
-    // Clear error for the specific field if it exists
     if (errors[name]) {
       setErrors((prev) => ({
         ...prev,
@@ -52,7 +49,40 @@ const ConsumerRegister = () => {
     }
   };
 
-  // Handle adding a product
+  const handleFindProviders = async () => {
+    if (formData.location.trim() === "") {
+      alert("Please enter your location before finding providers.");
+      return;
+    }
+
+    setLoading(true);
+    setNoProvidersFound(false);
+    setFilteredProviders([]);
+
+    try {
+      const response = await axios.get(
+        `http://localhost:5000/api/providers?location=${formData.location}`
+      );
+
+      const providers = response.data.providers || [];
+
+      if (providers.length === 0) {
+        setNoProvidersFound(true);
+        setFilteredProviders([]);
+      } else {
+        const sortedProviders = providers.sort(
+          (a, b) => a.distance - b.distance
+        );
+        setFilteredProviders(sortedProviders);
+      }
+    } catch (error) {
+      console.error("Error fetching providers:", error);
+      alert("Error fetching providers. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleAddProduct = () => {
     const trimmedInput = formData.productInput.trim();
     if (trimmedInput && !formData.products.includes(trimmedInput)) {
@@ -64,7 +94,6 @@ const ConsumerRegister = () => {
     }
   };
 
-  // Handle removing a product
   const handleRemoveProduct = (productToRemove) => {
     setFormData((prev) => ({
       ...prev,
@@ -72,7 +101,6 @@ const ConsumerRegister = () => {
     }));
   };
 
-  // Validate form
   const validateForm = () => {
     const newErrors = {};
 
@@ -108,7 +136,6 @@ const ConsumerRegister = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -118,15 +145,29 @@ const ConsumerRegister = () => {
     setErrors({});
 
     try {
-      // Simulate API call (replace with actual API logic)
-      console.log("Consumer Registered:", formData);
+      const payload = {
+        shopName: formData.shopName,
+        location: formData.location,
+        email: formData.email,
+        secretCode: formData.secretCode,
+        productDetails: formData.products,
+        needsStorage: formData.storageRequired,
+        connectedProvider: formData.selectedProvider,
+      };
+
+      const response = await axios.post(
+        "http://localhost:5000/api/consumer/register",
+        payload
+      );
+
+      console.log("Consumer Registered:", response.data);
 
       setIsSuccess(true);
 
       setTimeout(() => {
         setIsSuccess(false);
-        // In actual implementation, use navigate('/') if using React Router
         alert("Registration successful! Redirecting...");
+        navigate("/");
       }, 1500);
     } catch (error) {
       const errorMessage =
@@ -145,12 +186,11 @@ const ConsumerRegister = () => {
   };
 
   const handleBack = () => {
-    navigate("/"); // ✅ Navigate to landing page
+    navigate("/");
   };
 
   return (
     <div className="w-screen h-screen flex flex-col bg-gradient-to-br from-yellow-50 to-blue-50 p-4">
-      {/* Back Button */}
       <div className="flex justify-end mb-4">
         <button
           onClick={handleBack}
@@ -160,9 +200,7 @@ const ConsumerRegister = () => {
         </button>
       </div>
 
-      {/* Form Container with Custom Scrollbar */}
       <div className="w-full max-w-4xl mx-auto bg-white p-8 rounded-2xl shadow-lg overflow-y-auto h-[90vh]">
-        {/* Title */}
         <h1 className="text-3xl font-bold text-center text-blue-900 mb-1">
           Welcome to W-Connect
         </h1>
@@ -181,8 +219,7 @@ const ConsumerRegister = () => {
             <p className="text-gray-700">Redirecting to home...</p>
           </div>
         ) : (
-          <div className="space-y-6">
-            {/* Shop Name */}
+          <form onSubmit={handleSubmit} className="space-y-6">
             <div>
               <label className="block text-sm font-semibold text-blue-900 mb-1">
                 Shop Name
@@ -209,7 +246,6 @@ const ConsumerRegister = () => {
               )}
             </div>
 
-            {/* Location */}
             <div>
               <label className="block text-sm font-semibold text-blue-900 mb-1">
                 Location
@@ -236,7 +272,62 @@ const ConsumerRegister = () => {
               )}
             </div>
 
-            {/* Email Address */}
+            <div className="flex items-center space-x-3 mb-3">
+              <button
+                type="button"
+                onClick={handleFindProviders}
+                className="flex items-center bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
+              >
+                <Search className="w-4 h-4 mr-2" />
+                Find Providers
+              </button>
+              <span className="text-gray-500 text-sm">
+                Click to fetch nearby providers
+              </span>
+            </div>
+
+            {loading && (
+              <div className="flex items-center space-x-2 text-blue-600 mb-2">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>Loading providers...</span>
+              </div>
+            )}
+
+            {noProvidersFound && (
+              <p className="text-red-500 font-medium mb-2">
+                No providers found for the entered location.
+              </p>
+            )}
+
+            <div>
+              <label className="block text-sm font-semibold text-blue-900 mb-1">
+                Select Provider to Connect
+              </label>
+              <select
+                name="selectedProvider"
+                value={formData.selectedProvider}
+                onChange={handleInputChange}
+                className={`w-full border rounded-lg py-2.5 px-4 focus:outline-none focus:ring-2 text-sm ${
+                  errors.selectedProvider
+                    ? "border-red-500 focus:ring-red-300"
+                    : "border-gray-300 focus:ring-blue-300"
+                }`}
+                required
+              >
+                <option value="">Select a Provider</option>
+                {filteredProviders.map((provider, idx) => (
+                  <option key={idx} value={provider._id}>
+                    {`${provider.shopName} - ${provider.location}`}
+                  </option>
+                ))}
+              </select>
+              {errors.selectedProvider && (
+                <p className="text-red-500 text-sm mt-1 font-medium">
+                  {errors.selectedProvider}
+                </p>
+              )}
+            </div>
+
             <div>
               <label className="block text-sm font-semibold text-blue-900 mb-1">
                 Email Address
@@ -263,7 +354,6 @@ const ConsumerRegister = () => {
               )}
             </div>
 
-            {/* Secret Code */}
             <div>
               <label className="block text-sm font-semibold text-blue-900 mb-1">
                 Secret Code
@@ -293,12 +383,10 @@ const ConsumerRegister = () => {
               </p>
             </div>
 
-            {/* Product Details with Add Button */}
             <div>
               <label className="block text-sm font-semibold text-blue-900 mb-3">
                 Product Details
               </label>
-
               <div className="flex items-center space-x-2 mb-4">
                 <input
                   type="text"
@@ -317,7 +405,6 @@ const ConsumerRegister = () => {
                 </button>
               </div>
 
-              {/* Product Tags with clean X button */}
               <div className="flex flex-wrap gap-3">
                 {formData.products.map((product, index) => (
                   <div
@@ -350,37 +437,6 @@ const ConsumerRegister = () => {
               )}
             </div>
 
-            {/* Provider Selection */}
-            <div>
-              <label className="block text-sm font-semibold text-blue-900 mb-1">
-                Select Provider to Connect
-              </label>
-              <select
-                name="selectedProvider"
-                value={formData.selectedProvider}
-                onChange={handleInputChange}
-                className={`w-full border rounded-lg py-2.5 px-4 focus:outline-none focus:ring-2 text-sm ${
-                  errors.selectedProvider
-                    ? "border-red-500 focus:ring-red-300"
-                    : "border-gray-300 focus:ring-blue-300"
-                }`}
-                required
-              >
-                <option value="">Select a Provider</option>
-                {providers.map((provider, idx) => (
-                  <option key={idx} value={provider}>
-                    {provider}
-                  </option>
-                ))}
-              </select>
-              {errors.selectedProvider && (
-                <p className="text-red-500 text-sm mt-1 font-medium">
-                  {errors.selectedProvider}
-                </p>
-              )}
-            </div>
-
-            {/* Storage Option */}
             <div className="flex items-center space-x-3">
               <input
                 type="checkbox"
@@ -394,10 +450,8 @@ const ConsumerRegister = () => {
               </label>
             </div>
 
-            {/* Submit Button */}
             <button
-              type="button"
-              onClick={handleSubmit}
+              type="submit"
               disabled={isSubmitting}
               className={`w-full py-3 rounded-lg font-semibold text-white focus:outline-none transition-all text-sm ${
                 isSubmitting
@@ -408,7 +462,6 @@ const ConsumerRegister = () => {
               {isSubmitting ? "Registering..." : "Register as Consumer"}
             </button>
 
-            {/* Submit Error */}
             {errors.submit && (
               <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
                 <p className="text-red-500 text-sm font-medium">
@@ -416,6 +469,7 @@ const ConsumerRegister = () => {
                 </p>
               </div>
             )}
+
             <p className="text-center mt-2 text-sm text-gray-600">
               Already registered?{" "}
               <span
@@ -425,7 +479,7 @@ const ConsumerRegister = () => {
                 Login
               </span>
             </p>
-          </div>
+          </form>
         )}
       </div>
     </div>
