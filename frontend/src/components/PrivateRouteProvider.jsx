@@ -1,4 +1,4 @@
-// src/utils/PrivateRouteProvider.jsx
+// src/components/PrivateRouteProvider.jsx
 import React from 'react';
 import { Navigate } from 'react-router-dom';
 import { isAuthenticated } from '../utils/auth';

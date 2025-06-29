@@ -2,19 +2,22 @@ const Provider = require('../models/Provider');
 const geocodeAddress = require('../utils/geocode');
 const jwt = require('jsonwebtoken');
 
-const generateToken = (id) => {
-  return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: '30d' });
+// Generate token with role
+const generateToken = (id, role) => {
+  return jwt.sign({ id, role }, process.env.JWT_SECRET, { expiresIn: '30d' });
 };
 
 const registerProvider = async (req, res) => {
   try {
     const { shopName, location, email, secretCode } = req.body;
 
+    // Check if provider already exists
     const existingProvider = await Provider.findOne({ email });
     if (existingProvider) {
       return res.status(400).json({ message: 'Email already in use' });
     }
 
+    // Get latitude and longitude for the provided location
     const { latitude, longitude } = await geocodeAddress(location);
 
     const newProvider = new Provider({
@@ -28,7 +31,8 @@ const registerProvider = async (req, res) => {
 
     await newProvider.save();
 
-    const token = generateToken(newProvider._id);
+    // Generate token with role included
+    const token = generateToken(newProvider._id, 'provider');
 
     res.status(201).json({
       message: 'Provider registered successfully',
@@ -51,7 +55,8 @@ const loginProvider = async (req, res) => {
       return res.status(401).json({ message: 'Invalid email or secret code' });
     }
 
-    const token = generateToken(provider._id);
+    // Generate token with role included
+    const token = generateToken(provider._id, 'provider');
 
     res.status(200).json({
       message: 'Provider logged in successfully',

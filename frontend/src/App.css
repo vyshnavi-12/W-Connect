@@ -1,17 +1,139 @@
-/* Custom Scrollbar for Consumer Registration */
+/* app.css */
+
+/* Page-level scrollbar for mobile - apply to main document */
+@media (max-width: 767px) {
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(100, 100, 100, 0.3) transparent;
+  }
+  
+  *::-webkit-scrollbar {
+    width: 8px;
+  }
+  
+  *::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  
+  *::-webkit-scrollbar-thumb {
+    background-color: rgba(100, 100, 100, 0.3);
+    border-radius: 4px;
+  }
+  
+  *::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(100, 100, 100, 0.5);
+  }
+
+  /* Specifically target the main document scrollbar */
+  html, body {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(100, 100, 100, 0.3) transparent;
+  }
+  
+  html::-webkit-scrollbar, body::-webkit-scrollbar {
+    width: 8px;
+  }
+  
+  html::-webkit-scrollbar-track, body::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  
+  html::-webkit-scrollbar-thumb, body::-webkit-scrollbar-thumb {
+    background-color: rgba(100, 100, 100, 0.3);
+    border-radius: 4px;
+  }
+  
+  html::-webkit-scrollbar-thumb:hover, body::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(100, 100, 100, 0.5);
+  }
+
+  /* Fix mobile stacking - adjust main content top margin */
+  main {
+    margin-top: 220px !important; /* Increased to prevent overlap with dashboard header */
+  }
+
+  /* Ensure containers stack properly on mobile */
+  .grid-cols-12 {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 1rem !important;
+  }
+
+  /* Override grid column spans on mobile */
+  .col-span-12 {
+    width: 100% !important;
+    grid-column: unset !important;
+  }
+
+  /* Ensure proper height for mobile containers */
+  .col-span-12 > div[class*="bg-white"] {
+    height: 500px !important;
+    min-height: 500px !important;
+  }
+}
+
+/* Desktop responsiveness */
+@media (min-width: 768px) {
+  /* Restore grid layout for desktop */
+  .grid-cols-12 {
+    display: grid !important;
+    grid-template-columns: repeat(12, minmax(0, 1fr)) !important;
+    flex-direction: unset !important;
+  }
+
+  /* Ensure main content uses correct margin for desktop */
+  main {
+    margin-top: 176px !important;
+  }
+}
+
+/* Custom scrollbar for container content */
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(100, 100, 100, 0.3) transparent;
+}
+
 .custom-scrollbar::-webkit-scrollbar {
   width: 8px;
-}
-
-.custom-scrollbar::-webkit-scrollbar-thumb {
-  background-color: #93c5fd; /* Tailwind's blue-300 */
-  border-radius: 10px;
-}
-
-.custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background-color: #60a5fa; /* Tailwind's blue-400 */
+  height: 8px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-track {
-  background-color: #f0f9ff; /* Tailwind's blue-50 */
+  background: transparent;
+  border-radius: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: rgba(100, 100, 100, 0.3);
+  border-radius: 4px;
+  transition: background-color 0.2s ease;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(100, 100, 100, 0.5);
+}
+
+.custom-scrollbar::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* Additional fix for dashboard header positioning */
+.fixed.top-\[84px\] {
+  background-color: rgb(243, 244, 246); /* bg-gray-100 */
+  padding-bottom: 8px; /* Add padding to create gap */
+}
+
+/* Ensure no container overlap with fixed headers */
+@media (max-width: 767px) {
+  .fixed.top-\[84px\] {
+    position: fixed;
+    z-index: 40;
+    background-color: rgb(243, 244, 246);
+    padding-bottom: 8px;
+  }
+  
+  /* Add extra spacing for the first container */
+  .grid-cols-12 > div:first-child {
+    margin-top: 16px !important;
+  }
 }
