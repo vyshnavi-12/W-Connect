@@ -1,5 +1,6 @@
 import React from "react";
 import Header from "../components/Header";
+import "../styles/provider-dashboard.css"
 import {
   PieChart,
   Pie,
@@ -77,7 +78,7 @@ const sampleRequests = [
 
 const Dashboard = () => {
   return (
-    <div className="w-screen h-screen bg-gray-100 overflow-hidden flex flex-col">
+    <div className="provider-dashboard-page w-screen h-screen bg-gray-100 overflow-hidden flex flex-col">
       {/* Header */}
       <div className="fixed top-0 left-0 w-full z-50">
         <Header />

@@ -1,6 +1,8 @@
-/* app.css */
+/* app.css - Global Styles Only */
 
-/* Base Reset */
+/* ---------------------------- */
+/* ✅ Base Reset & Font Setup  */
+/* ---------------------------- */
 * {
   box-sizing: border-box;
   margin: 0;
@@ -16,10 +18,12 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Custom Scrollbar for Desktop Requests List */
+/* ---------------------------- */
+/* ✅ Global Custom Scrollbar  */
+/* ---------------------------- */
 .custom-scrollbar {
   scrollbar-width: thin;
-  scrollbar-color: rgba(100, 100, 100, 0.3) transparent;
+  scrollbar-color: rgba(160, 160, 160, 0.4) transparent;
 }
 
 .custom-scrollbar::-webkit-scrollbar {
@@ -31,132 +35,84 @@ body {
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background-color: rgba(100, 100, 100, 0.3);
+  background-color: rgba(160, 160, 160, 0.4);
   border-radius: 4px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background-color: rgba(100, 100, 100, 0.5);
+  background-color: rgba(160, 160, 160, 0.6);
 }
 
-/* Desktop - Prevent page level scrolling */
-@media (min-width: 1024px) {
-  html,
-  body {
-    overflow: hidden !important;
+/* ---------------------------- */
+/* ✅ Global Animation Classes */
+/* ---------------------------- */
+@keyframes fade-in {
+  from {
+    opacity: 0;
   }
-}
-
-/* Mobile/Tablet - Enable page level scrolling and fix charts */
-@media (max-width: 1023px) {
-  /* Enable page-level scrolling on mobile/tablet */
-  html,
-  body {
-    overflow-y: auto !important;
-    height: auto !important;
-    scrollbar-width: thin;
-    scrollbar-color: rgba(100, 100, 100, 0.3) transparent;
-  }
-
-  html::-webkit-scrollbar,
-  body::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
-  }
-
-  html::-webkit-scrollbar-track,
-  body::-webkit-scrollbar-track {
-    background: transparent;
-  }
-
-  html::-webkit-scrollbar-thumb,
-  body::-webkit-scrollbar-thumb {
-    background-color: rgba(100, 100, 100, 0.3);
-    border-radius: 4px;
-  }
-
-  html::-webkit-scrollbar-thumb:hover,
-  body::-webkit-scrollbar-thumb:hover {
-    background-color: rgba(100, 100, 100, 0.5);
-  }
-
-  /* Fix main container - remove fixed height and overflow constraints */
-  .w-screen.h-screen.bg-gray-100.overflow-hidden {
-    height: auto !important;
-    min-height: 100vh !important;
-    overflow: visible !important;
-  }
-
-  /* Fix main content area - allow natural flow */
-  .flex-1.pt-\[84px\].flex.flex-col.lg\:flex-row.overflow-hidden {
-    overflow: visible !important;
-    height: auto !important;
-    flex: none !important;
-  }
-
-  /* Fix charts panel - remove overflow constraints */
-  .flex.flex-col.w-full.lg\:w-1\/2.p-4.lg\:p-6.gap-2.overflow-hidden {
-    overflow: visible !important;
-    height: auto !important;
-  }
-
-  /* Fix individual chart containers - set specific heights */
-  .h-1\/2.min-h-0 {
-    height: 300px !important;
-    min-height: 300px !important;
-    margin-bottom: 1rem;
-    flex: none !important;
-  }
-
-  /* Ensure chart content areas have proper height */
-  .h-\[calc\(100\%-2rem\)\] {
-    height: 250px !important;
-    min-height: 250px !important;
-  }
-
-  /* Fix requests panel - remove overflow constraints */
-  .w-full.lg\:w-1\/2.p-4.lg\:p-6.flex.flex-col.overflow-hidden {
-    overflow: visible !important;
-    height: auto !important;
-  }
-
-  /* Fix requests container - set specific height for mobile */
-  .bg-white.rounded-lg.shadow.p-4.flex-1.flex.flex-col.overflow-hidden {
-    overflow: visible !important;
-    height: 400px !important;
-    flex: none !important;
-  }
-
-  /* Fix requests scroll area - enable internal scrolling with limited height */
-  .flex-1.overflow-y-auto.space-y-4.pr-2.custom-scrollbar {
-    overflow-y: auto !important;
-    height: 320px !important; /* Show ~2-3 cards, rest scroll */
-    flex: none !important;
-    max-height: 320px !important;
+  to {
+    opacity: 1;
   }
 }
 
-/* Tablet specific adjustments */
-@media (min-width: 768px) and (max-width: 1023px) {
-  .h-1\/2.min-h-0 {
-    height: 350px !important;
-    min-height: 350px !important;
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
   }
-
-  .h-\[calc\(100\%-2rem\)\] {
-    height: 300px !important;
-    min-height: 300px !important;
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 
-/* Fix for fixed header overlap */
-.fixed.top-\[84px\] {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  z-index: 50;
-  background-color: #f3f4f6; /* bg-gray-100 */
-  padding-bottom: 4px;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+@keyframes slide-in-left {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slide-in-right {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes gentle-float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.8s ease-out;
+}
+
+.animate-fade-up {
+  animation: fade-up 0.8s ease-out;
+}
+
+.animate-slide-in-left {
+  animation: slide-in-left 0.8s ease-out;
+}
+
+.animate-slide-in-right {
+  animation: slide-in-right 0.8s ease-out;
+}
+
+.animate-gentle-float {
+  animation: gentle-float 3s ease-in-out infinite;
 }

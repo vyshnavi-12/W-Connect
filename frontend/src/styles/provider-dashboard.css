@@ -1,0 +1,153 @@
+/* --------------------------------------------- */
+/* ✅ Provider Dashboard Responsive Layout Fixes  */
+/* --------------------------------------------- */
+@media (max-width: 1023px) {
+  html,
+  body {
+    height: auto !important;
+    min-height: 100vh !important;
+    overflow-y: auto !important;
+  }
+
+  .provider-dashboard-page {
+    height: auto !important;
+    min-height: 100vh !important;
+    overflow: visible !important;
+    display: block !important;
+  }
+
+  /* Main background container */
+  .provider-dashboard-page .w-screen.h-screen.bg-gray-100.overflow-hidden {
+    height: auto !important;
+    overflow: visible !important;
+  }
+
+  /* Main layout container */
+  .provider-dashboard-page .flex-1.pt-\[84px\].flex.flex-col.lg\:flex-row.overflow-hidden {
+    display: block !important;
+    height: auto !important;
+    overflow: visible !important;
+    max-height: none !important;
+    overflow-y: auto !important;
+  }
+
+  /* ✅ Scrollbar styles for stacked layout */
+  .provider-dashboard-page .flex-1.pt-\[84px\].flex.flex-col.lg\:flex-row.overflow-hidden {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(160, 160, 160, 0.4) transparent;
+  }
+
+  .provider-dashboard-page .flex-1.pt-\[84px\].flex.flex-col.lg\:flex-row.overflow-hidden::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  .provider-dashboard-page .flex-1.pt-\[84px\].flex.flex-col.lg\:flex-row.overflow-hidden::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .provider-dashboard-page .flex-1.pt-\[84px\].flex.flex-col.lg\:flex-row.overflow-hidden::-webkit-scrollbar-thumb {
+    background-color: rgba(160, 160, 160, 0.4);
+    border-radius: 4px;
+  }
+
+  .provider-dashboard-page .flex-1.pt-\[84px\].flex.flex-col.lg\:flex-row.overflow-hidden::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(160, 160, 160, 0.6);
+  }
+
+  /* Left panel */
+  .provider-dashboard-page .flex.flex-col.w-full.lg\:w-1\/2.p-4.lg\:p-6.gap-2.overflow-hidden {
+    overflow: visible !important;
+    height: auto !important;
+    margin-bottom: 1rem;
+  }
+
+  /* Pie chart container */
+  .provider-dashboard-page .h-1\/2.min-h-0 {
+    height: 300px !important;
+    min-height: 300px !important;
+    margin-bottom: 1rem;
+    flex: none !important;
+  }
+
+  /* Pie chart content */
+  .provider-dashboard-page .h-\[calc\(100\%-2rem\)\] {
+    height: 250px !important;
+    min-height: 250px !important;
+  }
+
+  /* Right panel */
+  .provider-dashboard-page .w-full.lg\:w-1\/2.p-4.lg\:p-6.flex.flex-col.overflow-hidden {
+    overflow: visible !important;
+    height: auto !important;
+    margin-bottom: 1rem;
+  }
+
+  /* Requests container box */
+  .provider-dashboard-page .bg-white.rounded-lg.shadow.p-4.flex-1.flex.flex-col.overflow-hidden {
+    overflow: visible !important;
+    height: 400px !important;
+    flex: none !important;
+  }
+
+  /* Scrollable list inside requests */
+  .provider-dashboard-page .flex-1.overflow-y-auto.space-y-4.pr-2.custom-scrollbar {
+    overflow-y: auto !important;
+    height: 320px !important;
+    max-height: 320px !important;
+    flex: none !important;
+  }
+}
+
+/* ----------------------------------------- */
+/* ✅ Tablet-specific Pie Chart Height Tuning */
+/* ----------------------------------------- */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .provider-dashboard-page .h-1\/2.min-h-0 {
+    height: 350px !important;
+    min-height: 350px !important;
+  }
+
+  .provider-dashboard-page .h-\[calc\(100\%-2rem\)\] {
+    height: 300px !important;
+    min-height: 300px !important;
+  }
+}
+
+/* ----------------------------------------- */
+/* ✅ Fixed Header for Provider Dashboard     */
+/* ----------------------------------------- */
+.provider-dashboard-page .fixed.top-\[84px\] {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 50;
+  background-color: #f3f4f6; /* bg-gray-100 */
+  padding-bottom: 4px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+/* ----------------------------------------- */
+/* ✅ Reuse Global Scrollbar (for inner areas) */
+/* ----------------------------------------- */
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(160, 160, 160, 0.4) transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 8px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: rgba(160, 160, 160, 0.4);
+  border-radius: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(160, 160, 160, 0.6);
+}
