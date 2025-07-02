@@ -1,6 +1,36 @@
 import React from "react";
 import Header from "../components/Header";
-import DashboardHeader from "../components/Dashboard-Header";
+import {
+  PieChart,
+  Pie,
+  Cell,
+  Tooltip,
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Legend,
+} from "recharts";
+
+// Sample Data
+const pieData = [
+  { name: "Groceries", value: 400 },
+  { name: "Electronics", value: 300 },
+  { name: "Clothing", value: 200 },
+  { name: "Fruits & Dairy", value: 100 },
+];
+
+const barData = [
+  { name: "Dallas", requests: 4 },
+  { name: "Austin", requests: 2 },
+  { name: "Houston", requests: 5 },
+  { name: "San Antonio", requests: 3 },
+  { name: "El Paso", requests: 1 },
+];
+
+const COLORS = ["#8884d8", "#82ca9d", "#ffc658", "#ff8042"];
 
 const sampleRequests = [
   {
@@ -47,73 +77,84 @@ const sampleRequests = [
 
 const Dashboard = () => {
   return (
-    <div className="w-screen min-h-screen md:h-screen flex flex-col bg-gray-100 overflow-x-hidden md:overflow-hidden">
+    <div className="w-screen h-screen bg-gray-100 overflow-hidden flex flex-col">
       {/* Header */}
       <div className="fixed top-0 left-0 w-full z-50">
         <Header />
       </div>
 
-      {/* Dashboard Header */}
-      <div className="fixed top-[84px] left-0 w-full z-40">
-        <div className="px-4">
-          <DashboardHeader />
+      {/* Main content area */}
+      <div className="flex-1 pt-[84px] flex flex-col lg:flex-row overflow-hidden">
+
+        {/* Left Charts Panel */}
+        <div className="flex flex-col w-full lg:w-1/2 p-4 lg:p-6 gap-2 overflow-hidden">
+          {/* Chart Container 1 - Pie Chart */}
+          <div className="h-1/2 min-h-0">
+            <h2 className="text-lg font-semibold mb-2 text-center text-blue-700">Product Categories</h2>
+            <div className="h-[calc(100%-2rem)]">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={pieData}
+                    cx="50%"
+                    cy="50%"
+                    outerRadius={60}
+                    dataKey="value"
+                    label
+                  >
+                    {pieData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          {/* Chart Container 2 - Bar Chart */}
+          <div className="h-1/2 min-h-0">
+            <h2 className="text-lg font-semibold mb-2 text-center text-blue-700">Requests by City</h2>
+            <div className="h-[calc(100%-2rem)]">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={barData} margin={{ top: 5, right: 20, left: 5, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="name" />
+                  <YAxis />
+                  <Tooltip />
+                  <Legend />
+                  <Bar dataKey="requests" fill="#8884d8" />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
         </div>
-      </div>
 
-      {/* Main Content */}
-      <main 
-        className="mt-[176px] px-4 pb-4" 
-        style={{ 
-          minHeight: "calc(100vh - 176px)",
-          height: window.innerWidth >= 768 ? "calc(100vh - 176px)" : "auto"
-        }}
-      >
-        <div className="grid grid-cols-12 gap-4 md:h-full">
-          {/* Container 1 */}
-          <div className="col-span-12 md:col-span-3 bg-white p-6 rounded-xl shadow-md flex flex-col overflow-auto h-[500px] md:h-full">
-            <h2 className="text-lg font-semibold mb-4">Container 1</h2>
-            <p>This is the first container content.</p>
-          </div>
-
-          {/* Container 2 */}
-          <div className="col-span-12 md:col-span-3 bg-white p-6 rounded-xl shadow-md flex flex-col overflow-auto h-[500px] md:h-full">
-            <h2 className="text-lg font-semibold mb-4">Container 2</h2>
-            <p>This is the second container content.</p>
-          </div>
-
-          {/* Container 3 - Scrollable */}
-          <div className="col-span-12 md:col-span-6 bg-white p-6 rounded-xl shadow-md flex flex-col overflow-hidden h-[500px] md:h-full">
+        {/* Right Requests Panel */}
+        <div className="w-full lg:w-1/2 p-4 lg:p-6 flex flex-col overflow-hidden">
+          <div className="bg-white rounded-lg shadow p-4 flex-1 flex flex-col overflow-hidden">
             <h2 className="text-xl font-bold text-blue-700 text-center mb-4">
               Incoming Consumer Requests
             </h2>
-
-            <div className="space-y-4 overflow-y-auto pr-2 custom-scrollbar flex-grow pb-4">
+            {/* Request cards container with custom scroll */}
+            <div className="flex-1 overflow-y-auto space-y-4 pr-2 custom-scrollbar">
               {sampleRequests.map((request) => (
                 <div
                   key={request.id}
-                  className="bg-gray-50 p-4 rounded-lg shadow flex flex-col gap-2"
+                  className="bg-gray-100 p-4 rounded-md flex flex-col gap-1"
                 >
-                  <div className="text-base font-medium text-blue-900">
-                    {request.shopName}
+                  <div className="font-semibold text-blue-800">{request.shopName}</div>
+                  <div className="text-sm text-gray-700">Location: {request.location}</div>
+                  <div className="text-sm text-gray-700">Email: {request.email}</div>
+                  <div className="text-sm text-gray-700">Products: {request.products}</div>
+                  <div className="text-sm text-gray-700">
+                    Interested in Storage: {request.storage}
                   </div>
-                  <div className="text-sm text-gray-600">
-                    Location: {request.location}
-                  </div>
-                  <div className="text-sm text-gray-600">
-                    Email: {request.email}
-                  </div>
-                  <div className="text-sm text-gray-600">
-                    Products: {request.products}
-                  </div>
-                  <div className="text-sm text-gray-600">
-                    Interested in Future Storage Rentals: {request.storage}
-                  </div>
-
-                  <div className="flex gap-4 mt-2">
-                    <button className="bg-green-500 hover:bg-green-600 text-white px-4 py-1.5 rounded-lg text-sm">
+                  <div className="flex gap-3 mt-2">
+                    <button className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-sm">
                       Accept
                     </button>
-                    <button className="bg-red-500 hover:bg-red-600 text-white px-4 py-1.5 rounded-lg text-sm">
+                    <button className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm">
                       Reject
                     </button>
                   </div>
@@ -122,7 +163,7 @@ const Dashboard = () => {
             </div>
           </div>
         </div>
-      </main>
+      </div>
     </div>
   );
 };

@@ -1,30 +1,29 @@
 // src/pages/Notifications.jsx
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import Header from '../components/Header';
-import { AlertCircle, Trash2, ArrowLeft } from 'lucide-react';
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import Header from "../components/Header";
+import { AlertCircle, Trash2, ArrowLeft } from "lucide-react";
 
 const Notifications = () => {
   const navigate = useNavigate();
 
   const [notifications, setNotifications] = useState([
     {
-      id: 1,
-      type: 'request',
-      shopName: 'Sri Vyshnavi Traders',
-      location: 'Hyderabad, Telangana',
-      email: 'vysh@example.com',
-      message: 'Wants to join as a consumer',
+      id: 2,
+      type: "message",
+      message: "New message from Rama Retailers",
     },
     {
       id: 2,
-      type: 'message',
-      message: 'New message from Rama Retailers',
-    }
+      type: "message",
+      message: "New message from Rama Retailers",
+    },
   ]);
 
   const handleDelete = (id) => {
-    setNotifications(prev => prev.filter(notification => notification.id !== id));
+    setNotifications((prev) =>
+      prev.filter((notification) => notification.id !== id)
+    );
   };
 
   return (
@@ -34,7 +33,7 @@ const Notifications = () => {
       {/* Back Button */}
       <div className="flex justify-end p-4">
         <button
-          onClick={() => navigate('/dashboard')}
+          onClick={() => navigate("/dashboard")}
           className="flex items-center px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 transition"
         >
           <ArrowLeft className="w-4 h-4 mr-1" />
@@ -45,8 +44,9 @@ const Notifications = () => {
       {/* Notifications Container */}
       <div className="flex-1 flex items-start justify-center p-6 overflow-y-auto">
         <div className="w-full max-w-2xl">
-
-          <h1 className="text-2xl font-bold text-blue-900 mb-4 text-center">Notifications</h1>
+          <h1 className="text-2xl font-bold text-blue-900 mb-4 text-center">
+            Notifications
+          </h1>
 
           {notifications.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-60 text-gray-500 mt-20">
@@ -60,12 +60,20 @@ const Notifications = () => {
                   key={notification.id}
                   className="bg-white shadow-md p-4 rounded-xl relative flex flex-col"
                 >
-                  {notification.type === 'request' ? (
+                  {notification.type === "request" ? (
                     <>
-                      <p className="font-bold text-blue-900">{notification.shopName}</p>
-                      <p className="text-sm text-gray-600">{notification.location}</p>
-                      <p className="text-sm text-gray-600">{notification.email}</p>
-                      <p className="text-sm text-blue-700 mt-2">{notification.message}</p>
+                      <p className="font-bold text-blue-900">
+                        {notification.shopName}
+                      </p>
+                      <p className="text-sm text-gray-600">
+                        {notification.location}
+                      </p>
+                      <p className="text-sm text-gray-600">
+                        {notification.email}
+                      </p>
+                      <p className="text-sm text-blue-700 mt-2">
+                        {notification.message}
+                      </p>
                       <div className="flex gap-2 mt-4">
                         <button className="px-4 py-1 rounded bg-green-500 text-white hover:bg-green-600 text-sm font-semibold">
                           Accept
@@ -89,7 +97,6 @@ const Notifications = () => {
               ))}
             </div>
           )}
-
         </div>
       </div>
     </div>
