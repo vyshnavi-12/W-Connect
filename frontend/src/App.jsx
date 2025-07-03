@@ -7,13 +7,16 @@ import LandingPage from './pages/LandingPage';
 import SignupPage from './pages/SignupPage';
 import LoginPage from './pages/LoginPage';
 import Dashboard from './pages/Dashboard';
-import Notifications from './components/Notifications';
 import ConsumerRegister from './pages/Consumer-Regisgter';
 import ConsumerLogin from './pages/Consumer-Login';
 
+// Components
+import Notifications from './components/Notifications';
+import PostStorage from './pages/PostStorage'; // Assuming it's a component you want routed
+
 // Auth Protection
 import PrivateRouteProvider from './components/PrivateRouteProvider';
-
+// import PrivateRouteConsumer from './components/PrivateRouteConsumer'; // For future use
 
 function App() {
   return (
@@ -43,9 +46,16 @@ function App() {
             </PrivateRouteProvider>
           }
         />
+        <Route
+          path="/post-storage"
+          element={
+            <PrivateRouteProvider>
+              <PostStorage />
+            </PrivateRouteProvider>
+          }
+        />
 
-        {/* Example Protected Route for Consumer */}
-        {/* If you have consumer dashboard in future */}
+        {/* Example Protected Route for Consumer - Uncomment when ready */}
         {/* <Route
           path="/consumer-dashboard"
           element={

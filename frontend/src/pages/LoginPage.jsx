@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Building2, Key, Mail, AlertCircle, CheckCircle } from "lucide-react";
+import { Building2, Key, Mail, AlertCircle, CheckCircle, Eye, EyeOff } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 
@@ -13,6 +13,7 @@ const LoginPage = () => {
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -185,17 +186,24 @@ const LoginPage = () => {
               <div className="relative">
                 <Key className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                 <input
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   name="secretCode"
                   value={formData.secretCode}
                   onChange={handleInputChange}
-                  className={`w-full pl-9 pr-3 py-2.5 border rounded-lg focus:outline-none focus:ring-2 text-sm ${
+                  className={`w-full pl-9 pr-12 py-2.5 border rounded-lg focus:outline-none focus:ring-2 text-sm ${
                     errors.secretCode
                       ? "border-red-500 focus:ring-red-300"
                       : "border-gray-300 focus:ring-blue-300"
                   }`}
                   placeholder="Enter secret code"
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 bg-transparent border-none cursor-pointer"
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
               </div>
               {errors.secretCode && (
                 <p className="text-red-600 text-xs mt-1 flex items-center">
