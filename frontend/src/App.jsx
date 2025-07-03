@@ -9,6 +9,7 @@ import LoginPage from './pages/LoginPage';
 import Dashboard from './pages/Dashboard';
 import ConsumerRegister from './pages/Consumer-Regisgter';
 import ConsumerLogin from './pages/Consumer-Login';
+import Chat from './pages/Chat';
 
 // Components
 import Notifications from './components/Notifications';
@@ -51,6 +52,14 @@ function App() {
           element={
             <PrivateRouteProvider>
               <PostStorage />
+            </PrivateRouteProvider>
+          }
+        />
+        <Route
+          path="/chat"
+          element={
+            <PrivateRouteProvider>
+              <Chat />
             </PrivateRouteProvider>
           }
         />
