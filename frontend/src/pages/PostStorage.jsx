@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
 import Header from "../components/Header";
+import "../styles/post-storage.css";
 
 const PostStorage = () => {
   const [imagePreview, setImagePreview] = useState(null);
@@ -97,6 +98,46 @@ const PostStorage = () => {
           storageNeeds: "Furniture, Home Decor, Appliances",
           budget: "$60-100/month",
           urgency: "Flexible"
+        },
+        {
+          id: 5,
+          shopName: "Grocery Mart",
+          location: "City Center, NY",
+          distance: "1.2 km",
+          rating: 4.5,
+          storageNeeds: "Groceries, Perishables, Dairy",
+          budget: "$35-55/month",
+          urgency: "Within 1 week"
+        },
+        {
+          id: 6,
+          shopName: "Sports Zone",
+          location: "Mall Plaza, NY",
+          distance: "2.8 km",
+          rating: 4.3,
+          storageNeeds: "Sports Equipment, Fitness Gear",
+          budget: "$50-80/month",
+          urgency: "Within 3 weeks"
+        },
+        {
+          id: 7,
+          shopName: "Pet Paradise",
+          location: "Suburb Area, NY",
+          distance: "3.5 km",
+          rating: 4.7,
+          storageNeeds: "Pet Supplies, Pet Food, Toys",
+          budget: "$25-45/month",
+          urgency: "ASAP"
+        },
+        {
+          id: 8,
+          shopName: "Beauty Boutique",
+          location: "Fashion District, NY",
+          distance: "2.1 km",
+          rating: 4.6,
+          storageNeeds: "Cosmetics, Skincare, Accessories",
+          budget: "$40-65/month",
+          urgency: "Within 2 weeks"
         }
       ];
       
@@ -128,16 +169,16 @@ const PostStorage = () => {
   };
 
   return (
-    <div className="w-screen h-screen bg-gradient-to-br from-blue-50 to-yellow-50 flex flex-col overflow-hidden">
+    <div className="post-storage-page w-screen h-screen bg-gradient-to-br from-blue-50 to-yellow-50 flex flex-col overflow-hidden">
       {/* Header */}
       <div className="fixed top-0 left-0 w-full z-50">
         <Header />
       </div>
 
       {/* Main content area */}
-      <div className="flex-1 pt-[90px] pb-[90px] flex flex-col lg:flex-row gap-5 max-w-7xl mx-auto px-5 w-full overflow-hidden">
+      <div className="flex-1 pt-[90px] pb-[20px] flex flex-col lg:flex-row gap-5 max-w-7xl mx-auto px-5 w-full overflow-hidden">
         {/* Form Container */}
-        <div className="bg-white rounded-3xl p-6 lg:p-8 shadow-2xl w-full lg:w-[450px] flex-shrink-0 h-[calc(100vh-176px)] overflow-y-auto custom-scrollbar relative border-2 border-blue-100 animate-fade-up">
+        <div className="bg-white rounded-3xl p-6 lg:p-8 shadow-2xl w-full lg:w-[450px] flex-shrink-0 h-[calc(100vh-130px)] overflow-y-auto custom-scrollbar relative border-2 border-blue-100 animate-fade-up">
           {/* Top gradient bar */}
           <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-600 to-blue-800 rounded-t-3xl"></div>
           
@@ -235,7 +276,7 @@ const PostStorage = () => {
 
         {/* Consumers Container */}
         {showConsumers && (
-          <div className="bg-white rounded-3xl p-6 lg:p-8 shadow-2xl flex-1 h-[calc(100vh-180px)] overflow-y-auto custom-scrollbar relative border-2 border-yellow-100 animate-slide-in-right">
+          <div className="bg-white rounded-3xl p-6 lg:p-8 shadow-2xl flex-1 h-[calc(100vh-130px)] overflow-hidden custom-scrollbar relative border-2 border-yellow-100 animate-slide-in-right consumers-container">
             {/* Top gradient bar */}
             <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-yellow-500 to-orange-600 rounded-t-3xl"></div>
             
@@ -254,7 +295,7 @@ const PostStorage = () => {
               </div>
             ) : consumers.length > 0 ? (
               <>
-                <div className="space-y-4">
+                <div className="space-y-4 consumers-list">
                   {consumers.map((consumer) => (
                     <div
                       key={consumer.id}
@@ -287,12 +328,14 @@ const PostStorage = () => {
                   ))}
                 </div>
                 
-                <button
-                  onClick={sendNotification}
-                  className="w-full bg-gradient-to-r from-green-600 to-green-700 text-white py-3 lg:py-4 rounded-xl font-semibold hover:-translate-y-0.5 hover:shadow-xl transition-all duration-300 mt-5"
-                >
-                  Send Notification to Selected ({selectedConsumers.length})
-                </button>
+                <div className="notification-button-container">
+                  <button
+                    onClick={sendNotification}
+                    className="w-full bg-gradient-to-r from-green-600 to-green-700 text-white py-3 lg:py-4 rounded-xl font-semibold hover:-translate-y-0.5 hover:shadow-xl transition-all duration-300 mt-5"
+                  >
+                    Send Notification to Selected ({selectedConsumers.length})
+                  </button>
+                </div>
               </>
             ) : (
               <div className="text-center text-slate-500 py-10 italic">

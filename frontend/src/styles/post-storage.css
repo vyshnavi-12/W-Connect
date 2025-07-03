@@ -1,0 +1,245 @@
+/* --------------------------------------------- */
+/* ✅ PostStorage Responsive Layout Fixes       */
+/* --------------------------------------------- */
+@media (max-width: 1023px) {
+  html,
+  body {
+    height: auto !important;
+    min-height: 100vh !important;
+    overflow-y: auto !important;
+  }
+
+  .post-storage-page {
+    height: auto !important;
+    min-height: 100vh !important;
+    overflow: visible !important;
+    display: block !important;
+  }
+
+  /* Main background container */
+  .post-storage-page .w-screen.h-screen.bg-gradient-to-br.from-blue-50.to-yellow-50.flex.flex-col.overflow-hidden {
+    height: auto !important;
+    overflow: visible !important;
+  }
+
+  /* Main layout container */
+  .post-storage-page .flex-1.pt-\[90px\].pb-\[20px\].flex.flex-col.lg\:flex-row.gap-5.max-w-7xl.mx-auto.px-5.w-full.overflow-hidden {
+    display: block !important;
+    height: auto !important;
+    overflow: visible !important;
+    max-height: none !important;
+    overflow-y: auto !important;
+    padding-bottom: 1rem !important;
+  }
+
+  /* Form Container */
+  .post-storage-page .bg-white.rounded-3xl.p-6.lg\:p-8.shadow-2xl.w-full.lg\:w-\[450px\].flex-shrink-0.h-\[calc\(100vh-130px\)\].overflow-y-auto.custom-scrollbar.relative.border-2.border-blue-100.animate-fade-up {
+    height: auto !important;
+    overflow: visible !important;
+    margin-bottom: 1rem;
+    flex: none !important;
+    width: 100% !important;
+  }
+
+  /* Consumers Container */
+  .post-storage-page .consumers-container {
+    height: 70vh !important;
+    min-height: 500px !important;
+    max-height: 70vh !important;
+    overflow: hidden !important;
+    display: flex !important;
+    flex-direction: column !important;
+    flex: none !important;
+    margin-bottom: 1rem;
+  }
+
+  /* Consumers list - scrollable area */
+  .post-storage-page .consumers-list {
+    flex: 1 !important;
+    overflow-y: auto !important;
+    padding-right: 0.5rem !important;
+    margin-bottom: 1rem !important;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(160, 160, 160, 0.4) transparent;
+  }
+
+  .post-storage-page .consumers-list::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  .post-storage-page .consumers-list::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .post-storage-page .consumers-list::-webkit-scrollbar-thumb {
+    background-color: rgba(160, 160, 160, 0.4);
+    border-radius: 4px;
+  }
+
+  .post-storage-page .consumers-list::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(160, 160, 160, 0.6);
+  }
+
+  /* Notification button container - fixed at bottom */
+  .post-storage-page .notification-button-container {
+    position: sticky !important;
+    bottom: 0 !important;
+    background: white !important;
+    padding-top: 1rem !important;
+    margin-top: auto !important;
+    border-top: 1px solid rgba(226, 232, 240, 0.5) !important;
+    z-index: 10 !important;
+  }
+
+  .post-storage-page .notification-button-container button {
+    background: linear-gradient(to right, #059669, #047857) !important;
+    margin-top: 0 !important;
+  }
+}
+
+/* ----------------------------------------- */
+/* ✅ Tablet-specific Height Tuning           */
+/* ----------------------------------------- */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .post-storage-page .consumers-container {
+    height: 75vh !important;
+    min-height: 600px !important;
+    max-height: 75vh !important;
+  }
+}
+
+/* ----------------------------------------- */
+/* ✅ Desktop view - optimized layout         */
+/* ----------------------------------------- */
+@media (min-width: 1024px) {
+  .post-storage-page {
+    height: 100vh !important;
+    overflow: hidden !important;
+  }
+
+  .post-storage-page .w-screen.h-screen.bg-gradient-to-br.from-blue-50.to-yellow-50.flex.flex-col.overflow-hidden {
+    height: 100vh !important;
+    overflow: hidden !important;
+  }
+
+  .post-storage-page .flex-1.pt-\[90px\].pb-\[20px\].flex.flex-col.lg\:flex-row.gap-5.max-w-7xl.mx-auto.px-5.w-full.overflow-hidden {
+    height: calc(100vh - 110px) !important;
+    overflow: hidden !important;
+  }
+
+  /* Form container scrolling */
+  .post-storage-page .bg-white.rounded-3xl.p-6.lg\:p-8.shadow-2xl.w-full.lg\:w-\[450px\].flex-shrink-0.h-\[calc\(100vh-130px\)\].overflow-y-auto.custom-scrollbar.relative.border-2.border-blue-100.animate-fade-up {
+    height: calc(100vh - 130px) !important;
+    overflow-y: auto !important;
+  }
+
+  /* Consumers container - proper layout */
+  .post-storage-page .consumers-container {
+    height: calc(100vh - 130px) !important;
+    overflow: hidden !important;
+    display: flex !important;
+    flex-direction: column !important;
+  }
+
+  /* Consumers list - scrollable content */
+  .post-storage-page .consumers-list {
+    flex: 1 !important;
+    overflow-y: auto !important;
+    padding-right: 0.5rem !important;
+    margin-bottom: 1rem !important;
+  }
+
+  /* Notification button - fixed at bottom of container */
+  .post-storage-page .notification-button-container {
+    position: sticky !important;
+    bottom: 0 !important;
+    background: white !important;
+    padding-top: 1rem !important;
+    margin-top: auto !important;
+    border-top: 1px solid rgba(226, 232, 240, 0.3) !important;
+    z-index: 10 !important;
+  }
+}
+
+/* ----------------------------------------- */
+/* ✅ Global Scrollbar Styles                 */
+/* ----------------------------------------- */
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(160, 160, 160, 0.4) transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 8px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: rgba(160, 160, 160, 0.4);
+  border-radius: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(160, 160, 160, 0.6);
+}
+
+/* ----------------------------------------- */
+/* ✅ Animation Classes                       */
+/* ----------------------------------------- */
+.animate-fade-up {
+  animation: fadeUp 0.6s ease-out;
+}
+
+.animate-slide-in-right {
+  animation: slideInRight 0.6s ease-out;
+}
+
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* ----------------------------------------- */
+/* ✅ Loading Spinner                        */
+/* ----------------------------------------- */
+.border-3 {
+  border-width: 3px;
+}
+
+/* ----------------------------------------- */
+/* ✅ Focus states for better accessibility   */
+/* ----------------------------------------- */
+.post-storage-page input:focus,
+.post-storage-page textarea:focus,
+.post-storage-page button:focus {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+/* ----------------------------------------- */
+/* ✅ Responsive image handling              */
+/* ----------------------------------------- */
+.post-storage-page img {
+  max-width: 100%;
+  height: auto;
+}
