@@ -13,7 +13,8 @@ import Chat from './pages/Chat';
 
 // Components
 import Notifications from './components/Notifications';
-import PostStorage from './pages/PostStorage'; // Assuming it's a component you want routed
+import PostStorage from './pages/PostStorage';
+import PostStock from './pages/PostStock';
 
 // Auth Protection
 import PrivateRouteProvider from './components/PrivateRouteProvider';
@@ -60,6 +61,14 @@ function App() {
           element={
             <PrivateRouteProvider>
               <Chat />
+            </PrivateRouteProvider>
+          }
+        />
+        <Route
+          path="/post-stock"
+          element={
+            <PrivateRouteProvider>
+              <PostStock />
             </PrivateRouteProvider>
           }
         />

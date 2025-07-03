@@ -142,6 +142,7 @@ const PostStorage = () => {
       ];
       
       setConsumers(mockConsumers);
+      setSelectedConsumers(mockConsumers.map(consumer => consumer.id)); // Automatically select all consumers
       setIsLoading(false);
     }, 2000);
   };
@@ -331,9 +332,9 @@ const PostStorage = () => {
                 <div className="notification-button-container">
                   <button
                     onClick={sendNotification}
-                    className="w-full bg-gradient-to-r from-green-600 to-green-700 text-white py-3 lg:py-4 rounded-xl font-semibold hover:-translate-y-0.5 hover:shadow-xl transition-all duration-300 mt-5"
+                    className="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white py-3 lg:py-4 rounded-xl font-semibold hover:-translate-y-0.5 hover:shadow-xl transition-all duration-300 mt-5"
                   >
-                    Send Notification to Selected ({selectedConsumers.length})
+                    Send Notification
                   </button>
                 </div>
               </>

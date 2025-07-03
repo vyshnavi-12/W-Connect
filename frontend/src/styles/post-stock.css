@@ -1,0 +1,281 @@
+/* --------------------------------------------- */
+/* ✅ PostStock Responsive Layout Fixes         */
+/* --------------------------------------------- */
+@media (max-width: 1023px) {
+  html,
+  body {
+    height: auto !important;
+    min-height: 100vh !important;
+    overflow-y: auto !important;
+  }
+
+  .post-stock-page {
+    height: auto !important;
+    min-height: 100vh !important;
+    overflow: visible !important;
+    display: block !important;
+  }
+
+  /* Main background container */
+  .post-stock-page .w-screen.h-screen.bg-gradient-to-br.from-green-50.to-blue-50.flex.flex-col.overflow-hidden {
+    height: auto !important;
+    overflow: visible !important;
+  }
+
+  /* Main layout container */
+  .post-stock-page .flex-1.pt-\[90px\].pb-\[20px\].flex.flex-col.lg\:flex-row.gap-5.max-w-7xl.mx-auto.px-5.w-full.overflow-hidden {
+    display: block !important;
+    height: auto !important;
+    overflow: visible !important;
+    max-height: none !important;
+    overflow-y: auto !important;
+    padding-bottom: 1rem !important;
+  }
+
+  /* Form Container */
+  .post-stock-page .bg-white.rounded-3xl.p-6.lg\:p-8.shadow-2xl.w-full.lg\:w-\[450px\].flex-shrink-0.h-\[calc\(100vh-130px\)\].overflow-y-auto.custom-scrollbar.relative.border-2.border-green-100.animate-fade-up {
+    height: auto !important;
+    overflow: visible !important;
+    margin-bottom: 1rem;
+    flex: none !important;
+    width: 100% !important;
+  }
+
+  /* Consumers Container */
+  .post-stock-page .consumers-container {
+    height: 70vh !important;
+    min-height: 500px !important;
+    max-height: 70vh !important;
+    overflow: hidden !important;
+    display: flex !important;
+    flex-direction: column !important;
+    flex: none !important;
+    margin-bottom: 1rem;
+  }
+
+  /* Consumers list - scrollable area */
+  .post-stock-page .consumers-list {
+    flex: 1 !important;
+    overflow-y: auto !important;
+    padding-right: 0.5rem !important;
+    margin-bottom: 1rem !important;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(160, 160, 160, 0.4) transparent;
+  }
+
+  .post-stock-page .consumers-list::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  .post-stock-page .consumers-list::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .post-stock-page .consumers-list::-webkit-scrollbar-thumb {
+    background-color: rgba(160, 160, 160, 0.4);
+    border-radius: 4px;
+  }
+
+  .post-stock-page .consumers-list::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(160, 160, 160, 0.6);
+  }
+
+  /* Notification button container - fixed at bottom */
+  .post-stock-page .notification-button-container {
+    position: sticky !important;
+    bottom: 0 !important;
+    background: white !important;
+    padding-top: 1rem !important;
+    margin-top: auto !important;
+    border-top: 1px solid rgba(226, 232, 240, 0.5) !important;
+    z-index: 10 !important;
+  }
+
+  .post-stock-page .notification-button-container button {
+    background: linear-gradient(to right, #2563eb, #1d4ed8) !important;
+    margin-top: 0 !important;
+  }
+}
+
+/* ----------------------------------------- */
+/* ✅ Tablet-specific Height Tuning           */
+/* ----------------------------------------- */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .post-stock-page .consumers-container {
+    height: 75vh !important;
+    min-height: 600px !important;
+    max-height: 75vh !important;
+  }
+}
+
+/* ----------------------------------------- */
+/* ✅ Desktop view - optimized layout         */
+/* ----------------------------------------- */
+@media (min-width: 1024px) {
+  .post-stock-page {
+    height: 100vh !important;
+    overflow: hidden !important;
+  }
+
+  .post-stock-page .w-screen.h-screen.bg-gradient-to-br.from-green-50.to-blue-50.flex.flex-col.overflow-hidden {
+    height: 100vh !important;
+    overflow: hidden !important;
+  }
+
+  .post-stock-page .flex-1.pt-\[90px\].pb-\[20px\].flex.flex-col.lg\:flex-row.gap-5.max-w-7xl.mx-auto.px-5.w-full.overflow-hidden {
+    height: calc(100vh - 110px) !important;
+    overflow: hidden !important;
+  }
+
+  /* Form container scrolling */
+  .post-stock-page .bg-white.rounded-3xl.p-6.lg\:p-8.shadow-2xl.w-full.lg\:w-\[450px\].flex-shrink-0.h-\[calc\(100vh-130px\)\].overflow-y-auto.custom-scrollbar.relative.border-2.border-green-100.animate-fade-up {
+    height: calc(100vh - 130px) !important;
+    overflow-y: auto !important;
+  }
+
+  /* Consumers container - proper layout */
+  .post-stock-page .consumers-container {
+    height: calc(100vh - 130px) !important;
+    overflow: hidden !important;
+    display: flex !important;
+    flex-direction: column !important;
+  }
+
+  /* Consumers list - scrollable content */
+  .post-stock-page .consumers-list {
+    flex: 1 !important;
+    overflow-y: auto !important;
+    padding-right: 0.5rem !important;
+    margin-bottom: 1rem !important;
+  }
+
+  /* Notification button - fixed at bottom of container */
+  .post-stock-page .notification-button-container {
+    position: sticky !important;
+    bottom: 0 !important;
+    background: white !important;
+    padding-top: 1rem !important;
+    margin-top: auto !important;
+    border-top: 1px solid rgba(226, 232, 240, 0.3) !important;
+    z-index: 10 !important;
+  }
+}
+
+/* ----------------------------------------- */
+/* ✅ Global Scrollbar Styles                 */
+/* ----------------------------------------- */
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(160, 160, 160, 0.4) transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 8px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: rgba(160, 160, 160, 0.4);
+  border-radius: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(160, 160, 160, 0.6);
+}
+
+/* ----------------------------------------- */
+/* ✅ Animation Classes                       */
+/* ----------------------------------------- */
+.animate-fade-up {
+  animation: fadeUp 0.6s ease-out;
+}
+
+.animate-slide-in-right {
+  animation: slideInRight 0.6s ease-out;
+}
+
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* ----------------------------------------- */
+/* ✅ Loading Spinner                        */
+/* ----------------------------------------- */
+.border-3 {
+  border-width: 3px;
+}
+
+/* ----------------------------------------- */
+/* ✅ Focus states for better accessibility   */
+/* ----------------------------------------- */
+.post-stock-page input:focus,
+.post-stock-page textarea:focus,
+.post-stock-page select:focus,
+.post-stock-page button:focus {
+  outline: 2px solid #16a34a;
+  outline-offset: 2px;
+}
+
+/* ----------------------------------------- */
+/* ✅ Responsive image handling              */
+/* ----------------------------------------- */
+.post-stock-page img {
+  max-width: 100%;
+  height: auto;
+}
+
+/* ----------------------------------------- */
+/* ✅ Custom Select Styling                  */
+/* ----------------------------------------- */
+.post-stock-page select {
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+  background-position: right 0.5rem center;
+  background-repeat: no-repeat;
+  background-size: 1.5em 1.5em;
+  padding-right: 2.5rem;
+}
+
+/* ----------------------------------------- */
+/* ✅ Form Input Hover Effects               */
+/* ----------------------------------------- */
+.post-stock-page input:hover,
+.post-stock-page textarea:hover,
+.post-stock-page select:hover {
+  border-color: #16a34a;
+  transition: border-color 0.2s ease;
+}
+
+/* ----------------------------------------- */
+/* ✅ Button Disabled States                 */
+/* ----------------------------------------- */
+.post-stock-page button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+.post-stock-page button:disabled:hover {
+  transform: none !important;
+  box-shadow: none !important;
+}
