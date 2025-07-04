@@ -9,6 +9,8 @@ import LoginPage from './pages/LoginPage';
 import Dashboard from './pages/Dashboard';
 import ConsumerRegister from './pages/Consumer-Regisgter';
 import ConsumerLogin from './pages/Consumer-Login';
+import PrivateRouteConsumer from './components/PrivateRouteConsumer';
+import ConsumerDashboard from './pages/Consumer-Dashboard';
 
 // Components
 import Notifications from './components/Notifications';
@@ -65,14 +67,14 @@ function App() {
         />
 
         {/* Example Protected Route for Consumer - Uncomment when ready */}
-        {/* <Route
+        <Route
           path="/consumer-dashboard"
           element={
             <PrivateRouteConsumer>
               <ConsumerDashboard />
             </PrivateRouteConsumer>
           }
-        /> */}
+        />
       </Routes>
     </Router>
   );
