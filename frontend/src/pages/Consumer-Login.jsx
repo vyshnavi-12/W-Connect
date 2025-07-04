@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { Building2, Key, Mail, AlertCircle, CheckCircle } from 'lucide-react';
+import { Building2, Key, Mail, AlertCircle, CheckCircle, Clock, XCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import axios from "axios";
+
 const ConsumerLogin = () => {
   const navigate = useNavigate();
 
@@ -14,6 +15,7 @@ const ConsumerLogin = () => {
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [statusMessage, setStatusMessage] = useState(null);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -56,29 +58,45 @@ const ConsumerLogin = () => {
 
     setIsSubmitting(true);
     setErrors({});
+    setStatusMessage(null);
 
     try {
-      const res = await axios.post("http://localhost:5000/api/consumers/login", formData);
-      const { token } = res.data;
+      const res = await axios.post("http://localhost:5000/api/consumer/login", formData);
+      const { token, status, message, details } = res.data;
 
-      // Store the token
-      localStorage.setItem("token", token);
-
-
-      setIsSuccess(true);
-
-      localStorage.setItem("authConsumer", "true");
-
-      setTimeout(() => {
-        setIsSuccess(false);
-        navigate('/consumer-dashboard'); // Redirect to dashboard after success
-      }, 1500);
+      if (status === 'accepted') {
+        // Store the token and redirect to dashboard
+        localStorage.setItem("token", token);
+        localStorage.setItem("authConsumer", "true");
+        
+        setIsSuccess(true);
+        setTimeout(() => {
+          setIsSuccess(false);
+          navigate('/consumer-dashboard');
+        }, 1500);
+      } else if (status === 'pending') {
+        // Show pending status message
+        setStatusMessage({
+          type: 'pending',
+          title: 'Request Still Pending',
+          message: details || 'The provider still didn\'t accept your request. Please wait for approval.',
+          icon: Clock
+        });
+      } else if (status === 'rejected') {
+        // Show rejected status message
+        setStatusMessage({
+          type: 'rejected',
+          title: 'Request Rejected',
+          message: details || 'Your request has been rejected by the provider. Please try registering with a different provider.',
+          icon: XCircle
+        });
+      }
 
     } catch (error) {
       const errorMessage = error.response?.data?.message || 'Something went wrong';
 
       if (errorMessage === 'Invalid credentials') {
-        setErrors({ submit: 'Invalid shop name or secret code' });
+        setErrors({ submit: 'Invalid shop name, email, or secret code' });
       } else {
         setErrors({ submit: errorMessage });
       }
@@ -87,6 +105,56 @@ const ConsumerLogin = () => {
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const renderStatusMessage = () => {
+    if (!statusMessage) return null;
+
+    const IconComponent = statusMessage.icon;
+    const bgColor = statusMessage.type === 'pending' ? 'bg-yellow-50' : 'bg-red-50';
+    const borderColor = statusMessage.type === 'pending' ? 'border-yellow-200' : 'border-red-200';
+    const textColor = statusMessage.type === 'pending' ? 'text-yellow-800' : 'text-red-800';
+    const iconColor = statusMessage.type === 'pending' ? 'text-yellow-600' : 'text-red-600';
+
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className={`${bgColor} ${borderColor} border rounded-lg p-8 text-center max-w-md w-full mx-4`}>
+          <div className="flex justify-center mb-4">
+            <IconComponent className={`w-16 h-16 ${iconColor}`} />
+          </div>
+          <h3 className={`text-2xl font-bold ${textColor} mb-4`}>
+            {statusMessage.title}
+          </h3>
+          <p className={`${textColor} mb-6 text-lg`}>
+            {statusMessage.message}
+          </p>
+          {statusMessage.type === 'rejected' && (
+            <div className="space-y-3">
+              <button
+                onClick={() => navigate('/consumer-register')}
+                className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg text-lg font-medium w-full"
+              >
+                Register Again
+              </button>
+              <button
+                onClick={() => setStatusMessage(null)}
+                className="bg-gray-600 hover:bg-gray-700 text-white px-6 py-3 rounded-lg text-lg font-medium w-full"
+              >
+                Try Login Again
+              </button>
+            </div>
+          )}
+          {statusMessage.type === 'pending' && (
+            <button
+              onClick={() => setStatusMessage(null)}
+              className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg text-lg font-medium w-full"
+            >
+              Try Login Again
+            </button>
+          )}
+        </div>
+      </div>
+    );
   };
 
   return (
@@ -114,6 +182,8 @@ const ConsumerLogin = () => {
             <h3 className="text-xl font-bold text-green-600 mb-3">Login Successful!</h3>
             <p className="text-gray-700">Redirecting to dashboard...</p>
           </div>
+        ) : statusMessage ? (
+          renderStatusMessage()
         ) : (
           <div className="space-y-6">
             {/* Shop Name */}
