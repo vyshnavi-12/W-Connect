@@ -11,10 +11,16 @@ const registerProvider = async (req, res) => {
   try {
     const { shopName, location, email, secretCode } = req.body;
 
-    // Check if provider already exists
+    // Check if provider already exists by email
     const existingProvider = await Provider.findOne({ email });
     if (existingProvider) {
       return res.status(400).json({ message: "Email already in use" });
+    }
+
+    // Check if shop name already exists
+    const existingShop = await Provider.findOne({ shopName });
+    if (existingShop) {
+      return res.status(400).json({ message: "Shop name already exists" });
     }
 
     // Get latitude and longitude for the provided location
@@ -41,6 +47,28 @@ const registerProvider = async (req, res) => {
     });
   } catch (error) {
     console.error("Error registering provider:", error);
+    
+    // Handle MongoDB duplicate key error
+    if (error.code === 11000) {
+      if (error.keyPattern?.shopName) {
+        return res.status(400).json({ 
+          message: "Shop name already exists",
+          code: 11000 
+        });
+      }
+      if (error.keyPattern?.email) {
+        return res.status(400).json({ 
+          message: "Email already exists", 
+          code: 11000 
+        });
+      }
+      // Generic duplicate key error
+      return res.status(400).json({ 
+        message: "Duplicate key error",
+        code: 11000
+      });
+    }
+    
     res.status(500).json({ message: "Server error" });
   }
 };

@@ -166,7 +166,7 @@ const ConsumerRegister = () => {
 
       setTimeout(() => {
         setIsSuccess(false);
-        alert("Registration successful! Redirecting...");
+        alert("Request sent successfully! Please wait for provider approval.");
         navigate("/consumer-login");
       }, 1500);
     } catch (error) {
@@ -209,14 +209,23 @@ const ConsumerRegister = () => {
         </h2>
 
         {isSuccess ? (
-          <div className="text-center">
-            <div className="flex justify-center mb-4">
-              <Check className="w-12 h-12 text-green-500 animate-bounce" />
+          <div className="flex items-center justify-center min-h-[60vh]">
+            <div className="bg-white p-8 rounded-2xl shadow-lg text-center max-w-md mx-auto">
+              <div className="flex justify-center mb-4">
+                <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
+                  <Check className="w-8 h-8 text-green-500" />
+                </div>
+              </div>
+              <h3 className="text-2xl font-bold text-green-600 mb-3">
+                Request Sent Successfully!
+              </h3>
+              <p className="text-gray-600 mb-4">
+                Your consumer registration request has been submitted.
+              </p>
+              <p className="text-sm text-gray-500">
+                Please wait for provider approval...
+              </p>
             </div>
-            <h3 className="text-xl font-bold text-green-600 mb-3">
-              Registration Successful!
-            </h3>
-            <p className="text-gray-700">Redirecting to home...</p>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-6">

@@ -86,20 +86,61 @@ const SignupPage = () => {
 
       setTimeout(() => {
         setIsSuccess(false);
-        alert("Provider Registered Successfully! Redirecting...");
         navigate("/login");
       }, 1500);
     } catch (error) {
-      const errorMessage =
-        error.response?.data?.message || "Something went wrong";
-
-      if (errorMessage === "Email already in use") {
-        setErrors({ email: "This email is already registered" });
-      } else {
-        setErrors({ submit: errorMessage });
-      }
-
       console.error("Registration failed:", error);
+      console.log("Error response:", error.response);
+      console.log("Error response data:", error.response?.data);
+      
+      // Handle different types of errors
+      if (error.response) {
+        const errorData = error.response.data;
+        const errorMessage = errorData?.message || errorData?.error || "Something went wrong";
+        const errorCode = errorData?.code;
+        
+        // Convert error message to string for easier checking
+        const errorStr = String(errorMessage).toLowerCase();
+        
+        // Handle MongoDB duplicate key errors (E11000)
+        if (errorCode === 11000 || errorStr.includes("e11000") || errorStr.includes("duplicate key")) {
+          // Check if it's a shopName duplicate
+          if (errorStr.includes("shopname") || errorStr.includes("shop name")) {
+            setErrors({ shopName: "This shop name is already registered. Please use a different one." });
+          } 
+          // Check if it's an email duplicate
+          else if (errorStr.includes("email")) {
+            setErrors({ email: "This email is already registered. Please use a different one." });
+          } 
+          // Generic duplicate key error
+          else {
+            setErrors({ submit: "This information is already registered. Please use different details." });
+          }
+        }
+        // Check for duplicate errors even without specific error code
+        else if (errorStr.includes("shopname") && (errorStr.includes("duplicate") || errorStr.includes("already"))) {
+          setErrors({ shopName: "This shop name is already registered. Please use a different one." });
+        } 
+        else if (errorStr.includes("email") && (errorStr.includes("duplicate") || errorStr.includes("already"))) {
+          setErrors({ email: "This email is already registered. Please use a different one." });
+        }
+        // Handle validation errors from backend
+        else if (error.response.status === 400) {
+          setErrors({ submit: errorMessage });
+        }
+        // Handle other server errors
+        else {
+          setErrors({ submit: "Registration failed. Please try again later." });
+        }
+      } 
+      // Handle network errors
+      else if (error.request) {
+        setErrors({ submit: "Network error. Please check your connection and try again." });
+      } 
+      // Handle other errors
+      else {
+        setErrors({ submit: "An unexpected error occurred. Please try again." });
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -129,14 +170,23 @@ const SignupPage = () => {
         </h2>
 
         {isSuccess ? (
-          <div className="text-center">
-            <div className="flex justify-center mb-4">
-              <Check className="w-12 h-12 text-green-500 animate-bounce" />
+          <div className="flex items-center justify-center min-h-[60vh]">
+            <div className="bg-white p-8 rounded-2xl shadow-lg text-center max-w-md mx-auto">
+              <div className="flex justify-center mb-4">
+                <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
+                  <Check className="w-8 h-8 text-green-500" />
+                </div>
+              </div>
+              <h3 className="text-2xl font-bold text-green-600 mb-3">
+                Registration Successful!
+              </h3>
+              <p className="text-gray-600 mb-4">
+                Your provider account has been created successfully.
+              </p>
+              <p className="text-sm text-gray-500">
+                Redirecting to login...
+              </p>
             </div>
-            <h3 className="text-xl font-bold text-green-600 mb-3">
-              Provider Registered Successfully!
-            </h3>
-            <p className="text-gray-700">Redirecting to login...</p>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-6">
