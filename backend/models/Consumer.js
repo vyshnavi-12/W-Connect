@@ -7,7 +7,7 @@ const ConsumerSchema = new mongoose.Schema({
   secretCode: String, // will be hashed
   productDetails: [String],
   needsStorage: Boolean,
-  connectedProvider: String,
+  connectedProvider: { type: String, required: true },
 });
 
-module.exports = mongoose.model("Consumer", ConsumerSchema);
+module.exports = mongoose.model("pendingRequests", ConsumerSchema);
