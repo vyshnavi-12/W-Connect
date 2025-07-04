@@ -33,6 +33,27 @@ const barData = [
 ];
 
 const COLORS = ["#8884d8", "#82ca9d", "#ffc658", "#ff8042"];
+const handleAccept = async (requestId) => {
+  try{
+    const res=await axios.post(`http://localhost:5000/api/providers/accept-request/${requestId}`);
+    console.log(res.data.message);
+
+    setRequests(prev=>prev.filter(r=>r._id!==requestId));
+
+  }catch(error){
+    console.error("Error accepting request:", error.response?.data?.message || error.message);;
+  }
+};
+const handleReject = async (id) => {
+  try {
+    await axios.patch(`http://localhost:5000/api/providers/pending-requests/reject/${id}`);
+
+    // Remove from UI
+    setRequests(prev => prev.filter(req => req._id !== id));
+  } catch (error) {
+    console.error("Failed to reject request:", error.message);
+  }
+};
 
 const Dashboard = () => {
   const [requests,setRequests]=useState([]);
@@ -154,10 +175,10 @@ const Dashboard = () => {
                   <div className="text-sm text-gray-700">Products: {request.productDetails.join(", ")}</div>
                   <div className="text-sm text-gray-700">Interested in Storage: {request.needsStorage ? "Yes" : "No"}</div>
                   <div className="flex gap-3 mt-2">
-                    <button className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-sm">
+                    <button className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-sm" onClick={()=>handleAccept(request._id)}>
                       Accept
                     </button>
-                    <button className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm">
+                    <button className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm" onClick={()=>handleReject(request._id)}>
                       Reject
                     </button>
                   </div>
