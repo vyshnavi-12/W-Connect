@@ -156,7 +156,7 @@ const ConsumerRegister = () => {
       };
 
       const response = await axios.post(
-        "http://localhost:5000/api/consumer/register",
+        "http://localhost:5000/api/consumers/register",
         payload
       );
 
@@ -167,7 +167,7 @@ const ConsumerRegister = () => {
       setTimeout(() => {
         setIsSuccess(false);
         alert("Registration successful! Redirecting...");
-        navigate("/");
+        navigate("/consumer-login");
       }, 1500);
     } catch (error) {
       const errorMessage =

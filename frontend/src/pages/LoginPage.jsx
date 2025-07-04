@@ -72,7 +72,8 @@ const LoginPage = () => {
       console.log("Login successful:", response.data);
 
       localStorage.setItem("token", response.data.token);
-
+      localStorage.setItem("providerId", response.data.providerId);
+      localStorage.setItem("providerName",response.data.providerName);
       setIsSuccess(true);
 
       setTimeout(() => {

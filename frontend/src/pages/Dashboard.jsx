@@ -1,5 +1,6 @@
-import React from "react";
+import React,{useEffect,useState} from "react";
 import Header from "../components/Header";
+import axios from "axios";
 import "../styles/provider-dashboard.css"
 import {
   PieChart,
@@ -32,51 +33,51 @@ const barData = [
 ];
 
 const COLORS = ["#8884d8", "#82ca9d", "#ffc658", "#ff8042"];
+const handleAccept = async (requestId) => {
+  try{
+    const res=await axios.post(`http://localhost:5000/api/providers/accept-request/${requestId}`);
+    console.log(res.data.message);
 
-const sampleRequests = [
-  {
-    id: 1,
-    shopName: "ABC Retailers",
-    location: "Dallas, TX",
-    email: "abc@example.com",
-    products: "Groceries, Snacks",
-    storage: "No",
-  },
-  {
-    id: 2,
-    shopName: "XYZ Traders",
-    location: "Austin, TX",
-    email: "xyz@example.com",
-    products: "Electronics, Accessories",
-    storage: "Yes",
-  },
-  {
-    id: 3,
-    shopName: "Fresh Mart",
-    location: "Houston, TX",
-    email: "freshmart@example.com",
-    products: "Fruits, Vegetables, Dairy",
-    storage: "No",
-  },
-  {
-    id: 4,
-    shopName: "Fashion Hub",
-    location: "San Antonio, TX",
-    email: "fashionhub@example.com",
-    products: "Clothing, Shoes",
-    storage: "Yes",
-  },
-  {
-    id: 5,
-    shopName: "Techie Store",
-    location: "El Paso, TX",
-    email: "techie@example.com",
-    products: "Mobile Phones, Laptops",
-    storage: "No",
-  },
-];
+    setRequests(prev=>prev.filter(r=>r._id!==requestId));
+
+  }catch(error){
+    console.error("Error accepting request:", error.response?.data?.message || error.message);;
+  }
+};
+const handleReject = async (id) => {
+  try {
+    await axios.patch(`http://localhost:5000/api/providers/pending-requests/reject/${id}`);
+
+    // Remove from UI
+    setRequests(prev => prev.filter(req => req._id !== id));
+  } catch (error) {
+    console.error("Failed to reject request:", error.message);
+  }
+};
 
 const Dashboard = () => {
+  const [requests,setRequests]=useState([]);
+  const providerId=localStorage.getItem("providerId");
+
+  console.log(providerId)
+  useEffect(()=>{
+    const providerName=localStorage.getItem("providerName");
+    console.log("Provider name used is:",providerName);
+    const fetchRequests=async()=>{
+      if(!providerId){
+        console.error("Provider ID missing");
+        return;
+      }
+      try{
+        const res=await axios.get(`http://localhost:5000/api/providers/pending-requests/${providerName}`);
+        console.log("Fetched pending requests:",res.data);
+        setRequests(res.data);
+      }catch(error){
+        console.error("Failed to fetch requests:",error.message);
+      }
+    };
+    fetchRequests();
+  },[]);
   return (
     <div className="provider-dashboard-page w-screen h-screen bg-gray-100 overflow-hidden flex flex-col">
       {/* Header */}
@@ -138,7 +139,7 @@ const Dashboard = () => {
               Incoming Consumer Requests
             </h2>
             {/* Request cards container with custom scroll */}
-            <div className="flex-1 overflow-y-auto space-y-4 pr-2 custom-scrollbar">
+            {/*<div className="flex-1 overflow-y-auto space-y-4 pr-2 custom-scrollbar">
               {sampleRequests.map((request) => (
                 <div
                   key={request.id}
@@ -161,7 +162,30 @@ const Dashboard = () => {
                   </div>
                 </div>
               ))}
-            </div>
+            </div>*/}
+            <div className="flex-1 overflow-y-auto space-y-4 pr-2 custom-scrollbar">
+            {requests.length === 0 ? (
+              <p className="text-center text-gray-500">No pending requests</p>
+            ) : (
+              requests.map((request) => (
+                <div key={request._id} className="bg-gray-100 p-4 rounded-md flex flex-col gap-1">
+                  <div className="font-semibold text-blue-800">{request.shopName}</div>
+                  <div className="text-sm text-gray-700">Location: {request.location}</div>
+                  <div className="text-sm text-gray-700">Email: {request.email}</div>
+                  <div className="text-sm text-gray-700">Products: {request.productDetails.join(", ")}</div>
+                  <div className="text-sm text-gray-700">Interested in Storage: {request.needsStorage ? "Yes" : "No"}</div>
+                  <div className="flex gap-3 mt-2">
+                    <button className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-sm" onClick={()=>handleAccept(request._id)}>
+                      Accept
+                    </button>
+                    <button className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm" onClick={()=>handleReject(request._id)}>
+                      Reject
+                    </button>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
           </div>
         </div>
       </div>

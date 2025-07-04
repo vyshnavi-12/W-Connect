@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Building2, Key, Mail, AlertCircle, CheckCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-
+import axios from "axios";
 const ConsumerLogin = () => {
   const navigate = useNavigate();
 
@@ -58,14 +58,20 @@ const ConsumerLogin = () => {
     setErrors({});
 
     try {
-      // Simulate API call
-      console.log('Logging in consumer:', formData);
+      const res = await axios.post("http://localhost:5000/api/consumers/login", formData);
+      const { token } = res.data;
+
+      // Store the token
+      localStorage.setItem("token", token);
+
 
       setIsSuccess(true);
 
+      localStorage.setItem("authConsumer", "true");
+
       setTimeout(() => {
         setIsSuccess(false);
-        navigate('/dashboard'); // Redirect to dashboard after success
+        navigate('/consumer-dashboard'); // Redirect to dashboard after success
       }, 1500);
 
     } catch (error) {
