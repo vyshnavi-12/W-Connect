@@ -11,7 +11,9 @@ router.get("/pending-requests/:providerId", protect, async (req, res) => {
       return res.status(403).json({ message: "Not authorized as a provider" });
     }
     if (req.user.id !== providerId) {
-      return res.status(403).json({ message: "Not authorized to view requests for this provider" });
+      return res
+        .status(403)
+        .json({ message: "Not authorized to view requests for this provider" });
     }
 
     console.log("Fetching requests for provider ID:", providerId);
@@ -46,7 +48,9 @@ router.post("/accept-request/:requestId", protect, async (req, res) => {
     console.log("Accepting request with ID:", requestId);
 
     // Fetch pending request with secretCode
-    const pendingRequest = await PendingRequest.findById(requestId).select('+secretCode');
+    const pendingRequest = await PendingRequest.findById(requestId).select(
+      "+secretCode"
+    );
     if (!pendingRequest) {
       return res.status(404).json({ message: "Request not found" });
     }
@@ -64,7 +68,9 @@ router.post("/accept-request/:requestId", protect, async (req, res) => {
 
     // Verify the provider is authorized for this request
     if (pendingRequest.connectedProvider.toString() !== req.user.id) {
-      return res.status(403).json({ message: "Not authorized to accept this request" });
+      return res
+        .status(403)
+        .json({ message: "Not authorized to accept this request" });
     }
 
     // Strict validation of required fields
@@ -86,9 +92,9 @@ router.post("/accept-request/:requestId", protect, async (req, res) => {
         longitude: pendingRequest.longitude,
         secretCode: !!pendingRequest.secretCode,
       });
-      return res.status(400).json({ 
+      return res.status(400).json({
         message: "Invalid request data",
-        details: "Missing or invalid location, coordinates, or secret code"
+        details: "Missing or invalid location, coordinates, or secret code",
       });
     }
 
@@ -155,7 +161,9 @@ router.patch("/pending-requests/reject/:id", protect, async (req, res) => {
 
     // Verify the provider is authorized for this request
     if (pendingRequest.connectedProvider.toString() !== req.user.id) {
-      return res.status(403).json({ message: "Not authorized to reject this request" });
+      return res
+        .status(403)
+        .json({ message: "Not authorized to reject this request" });
     }
 
     const updated = await PendingRequest.findByIdAndUpdate(
@@ -192,7 +200,11 @@ router.get("/connected-consumers/:providerId", protect, async (req, res) => {
       return res.status(403).json({ message: "Not authorized as a provider" });
     }
     if (req.user.id !== providerId) {
-      return res.status(403).json({ message: "Not authorized to view consumers for this provider" });
+      return res
+        .status(403)
+        .json({
+          message: "Not authorized to view consumers for this provider",
+        });
     }
 
     // Validate providerId

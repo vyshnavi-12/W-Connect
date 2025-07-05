@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "../components/Header";
 import axios from "axios";
@@ -15,7 +15,7 @@ import {
   CartesianGrid,
   Legend,
 } from "recharts";
-import { Loader2, AlertCircle } from "lucide-react";
+import { Loader2, AlertCircle, RefreshCw } from "lucide-react";
 
 // Sample data for charts (replace with real data later)
 const pieData = [
@@ -40,44 +40,102 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [requestStatus, setRequestStatus] = useState({}); // Track loading state for each request
+  const [lastFetch, setLastFetch] = useState(Date.now());
+  const [isPolling, setIsPolling] = useState(true);
+  const [pollingInterval, setPollingInterval] = useState(30000); // 30 seconds default
+  
   const providerId = localStorage.getItem("providerId");
   const navigate = useNavigate();
+  const pollingRef = useRef(null);
+  const isComponentMounted = useRef(true);
 
+  // Cleanup on unmount
   useEffect(() => {
+    return () => {
+      isComponentMounted.current = false;
+      if (pollingRef.current) {
+        clearInterval(pollingRef.current);
+      }
+    };
+  }, []);
+
+  const fetchRequests = useCallback(async (showLoading = true) => {
     if (!providerId) {
       setError("Please log in to access the dashboard.");
       navigate("/provider-login");
       return;
     }
 
-    const fetchRequests = async () => {
+    if (showLoading) {
       setLoading(true);
-      setError(null);
+    }
+    setError(null);
 
-      try {
-        const token = localStorage.getItem("token");
-        const res = await axios.get(
-          `http://localhost:5000/api/providers/pending-requests/${providerId}`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
+    try {
+      const token = localStorage.getItem("token");
+      const res = await axios.get(
+        `http://localhost:5000/api/providers/pending-requests/${providerId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      
+      if (isComponentMounted.current) {
         console.log("Fetched pending requests:", res.data);
         setRequests(res.data || []); // Ensure requests is always an array
-      } catch (error) {
+        setLastFetch(Date.now());
+      }
+    } catch (error) {
+      if (isComponentMounted.current) {
         const errorMessage =
           error.response?.data?.message || "Failed to fetch pending requests.";
         setError(errorMessage);
         console.error("Error fetching requests:", error);
-      } finally {
+      }
+    } finally {
+      if (isComponentMounted.current && showLoading) {
         setLoading(false);
+      }
+    }
+  }, [providerId, navigate]);
+
+  // Initial fetch
+  useEffect(() => {
+    fetchRequests(true);
+  }, [fetchRequests]);
+
+  // Polling effect
+  useEffect(() => {
+    if (!isPolling || !providerId) return;
+
+    pollingRef.current = setInterval(() => {
+      fetchRequests(false); // Don't show loading spinner for background updates
+    }, pollingInterval);
+
+    return () => {
+      if (pollingRef.current) {
+        clearInterval(pollingRef.current);
+      }
+    };
+  }, [isPolling, pollingInterval, fetchRequests, providerId]);
+
+  // Handle visibility change to pause/resume polling
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        setIsPolling(false);
+      } else {
+        setIsPolling(true);
+        // Fetch immediately when tab becomes visible
+        fetchRequests(false);
       }
     };
 
-    fetchRequests();
-  }, [providerId, navigate]);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [fetchRequests]);
 
   const handleAccept = async (requestId) => {
     setRequestStatus((prev) => ({ ...prev, [requestId]: "accepting" }));
@@ -129,6 +187,27 @@ const Dashboard = () => {
       alert(errorMessage);
       console.error("Error rejecting request:", error);
     }
+  };
+
+  const handleManualRefresh = () => {
+    fetchRequests(true);
+  };
+
+  const togglePolling = () => {
+    setIsPolling(!isPolling);
+  };
+
+  const handlePollingIntervalChange = (newInterval) => {
+    setPollingInterval(newInterval);
+  };
+
+  const formatLastFetch = () => {
+    const now = Date.now();
+    const diff = Math.floor((now - lastFetch) / 1000);
+    
+    if (diff < 60) return `${diff}s ago`;
+    if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+    return `${Math.floor(diff / 3600)}h ago`;
   };
 
   return (
@@ -193,9 +272,53 @@ const Dashboard = () => {
         {/* Right Column: Requests */}
         <div className="w-full lg:w-1/2 p-4 lg:p-6 flex flex-col overflow-hidden">
           <div className="bg-white rounded-lg shadow p-4 flex-1 flex flex-col overflow-hidden">
-            <h2 className="text-xl font-bold text-blue-700 text-center mb-4">
-              Incoming Consumer Requests
-            </h2>
+            {/* Header with controls */}
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-bold text-blue-700">
+                Incoming Consumer Requests
+              </h2>
+              
+              {/* Polling controls */}
+              <div className="flex items-center gap-2">
+                <div className="text-xs text-gray-500">
+                  Updated {formatLastFetch()}
+                </div>
+                
+                <button
+                  onClick={handleManualRefresh}
+                  disabled={loading}
+                  className="p-2 text-blue-600 hover:bg-blue-50 rounded-full transition-colors"
+                  title="Refresh now"
+                >
+                  <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+                </button>
+                
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={togglePolling}
+                    className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
+                      isPolling 
+                        ? 'bg-green-100 text-green-700' 
+                        : 'bg-gray-100 text-gray-700'
+                    }`}
+                  >
+                    {isPolling ? 'Auto-refresh ON' : 'Auto-refresh OFF'}
+                  </button>
+                  
+                  <select
+                    value={pollingInterval}
+                    onChange={(e) => handlePollingIntervalChange(parseInt(e.target.value))}
+                    className="text-xs border rounded px-1 py-1"
+                    disabled={!isPolling}
+                  >
+                    <option value={10000}>10s</option>
+                    <option value={30000}>30s</option>
+                    <option value={60000}>1m</option>
+                    <option value={300000}>5m</option>
+                  </select>
+                </div>
+              </div>
+            </div>
 
             {loading ? (
               <div className="flex justify-center items-center h-full">
@@ -215,7 +338,7 @@ const Dashboard = () => {
                 {requests.map((request) => (
                   <div
                     key={request._id}
-                    className="bg-gray-100 p-4 rounded-md flex flex-col gap-2 border border-gray-200"
+                    className="bg-gray-100 p-4 rounded-md flex flex-col gap-2 border border-gray-200 hover:border-blue-300 transition-colors"
                   >
                     <div className="font-semibold text-blue-800 text-lg">
                       {request.shopName}
@@ -238,7 +361,7 @@ const Dashboard = () => {
                     </div>
                     <div className="flex gap-3 mt-3">
                       <button
-                        className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded text-sm font-medium flex items-center"
+                        className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded text-sm font-medium flex items-center transition-colors"
                         onClick={() => handleAccept(request._id)}
                         disabled={requestStatus[request._id]}
                       >
@@ -248,7 +371,7 @@ const Dashboard = () => {
                         {requestStatus[request._id] === "accepting" ? "Accepting..." : "Accept"}
                       </button>
                       <button
-                        className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded text-sm font-medium flex items-center"
+                        className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded text-sm font-medium flex items-center transition-colors"
                         onClick={() => handleReject(request._id)}
                         disabled={requestStatus[request._id]}
                       >
