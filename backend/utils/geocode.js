@@ -1,9 +1,14 @@
 const axios = require("axios");
 
+// Add rate limiting for Nominatim
+const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
 const geocodeAddress = async (address) => {
   try {
     // Enhanced preprocessing for Indian addresses
     let cleanedAddress = address.trim();
+    
+    console.log("Original address:", cleanedAddress);
     
     // Remove phone number pattern
     cleanedAddress = cleanedAddress.replace(/\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}/g, "").trim();
@@ -14,61 +19,93 @@ const geocodeAddress = async (address) => {
     // Remove state abbreviation in parentheses
     cleanedAddress = cleanedAddress.replace(/\s*\([A-Z]{2}\)/, "").trim();
     
-    // Indian-specific cleaning
-    // Remove house number patterns (H.No, HNo, H No, House No, etc.)
-    cleanedAddress = cleanedAddress.replace(/\b(h\.?no\.?|house\s+no\.?|h\s+no\.?)\s*[\d\-\/]+/i, "").trim();
+    // Indian-specific cleaning - FIXED: More conservative approach
+    // Only remove house number patterns if they're at the beginning and followed by comma
+    cleanedAddress = cleanedAddress.replace(/^(h\.?no\.?|house\s+no\.?|h\s+no\.?)\s*[\d\-\/]+,?\s*/i, "").trim();
     
-    // Remove plot/door number patterns
-    cleanedAddress = cleanedAddress.replace(/\b(plot\s+no\.?|door\s+no\.?|d\.?no\.?)\s*[\d\-\/]+/i, "").trim();
+    // Only remove plot/door number patterns if they're at the beginning and followed by comma
+    cleanedAddress = cleanedAddress.replace(/^(plot\s+no\.?|door\s+no\.?|d\.?no\.?)\s*[\d\-\/]+,?\s*/i, "").trim();
     
     // Remove multiple spaces and normalize
     cleanedAddress = cleanedAddress.replace(/\s+/g, " ").trim();
     
+    // Remove leading comma if present
+    cleanedAddress = cleanedAddress.replace(/^,\s*/, "").trim();
+    
     console.log("Cleaned address for geocoding:", cleanedAddress);
 
-    // Try multiple geocoding strategies
+    // Try multiple geocoding strategies with better fallbacks
     const strategies = [
       cleanedAddress, // Full cleaned address
       getAreaBasedAddress(cleanedAddress), // Area + City + State
       getCityBasedAddress(cleanedAddress), // City + State only
+      getDistrictBasedAddress(cleanedAddress), // Just city + country
     ];
 
-    for (const addressToTry of strategies) {
-      console.log(`Trying geocoding strategy: ${addressToTry}`);
+    // Remove duplicates and empty strategies
+    const uniqueStrategies = [...new Set(strategies.filter(s => s && s.trim().length > 0))];
+    
+    console.log("Geocoding strategies:", uniqueStrategies);
+
+    for (let i = 0; i < uniqueStrategies.length; i++) {
+      const addressToTry = uniqueStrategies[i];
+      console.log(`Trying geocoding strategy ${i + 1}: ${addressToTry}`);
       
       try {
+        // Add delay between requests to respect Nominatim rate limits
+        if (i > 0) {
+          await delay(1000); // 1 second delay between requests
+        }
+        
         const response = await axios.get(
-          `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(addressToTry)}&addressdetails=1&limit=1&countrycodes=in`,
+          `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(addressToTry)}&addressdetails=1&limit=5&countrycodes=in`,
           {
             headers: {
-              'User-Agent': 'YourAppName/1.0' // Add a proper user agent
-            }
+              'User-Agent': 'YourAppName/1.0 (contact@yourapp.com)' // Better user agent
+            },
+            timeout: 10000 // 10 second timeout
           }
         );
 
         const data = response.data;
+        console.log(`Strategy ${i + 1} returned ${data.length} results`);
+        
         if (data && data.length > 0) {
-          const { lat, lon } = data[0];
-          const latitude = parseFloat(lat);
-          const longitude = parseFloat(lon);
+          // Find the best result
+          const bestResult = findBestResult(data, addressToTry);
+          
+          if (bestResult) {
+            const { lat, lon } = bestResult;
+            const latitude = parseFloat(lat);
+            const longitude = parseFloat(lon);
 
-          if (isNaN(latitude) || isNaN(longitude)) {
-            continue; // Try next strategy
+            if (isNaN(latitude) || isNaN(longitude)) {
+              console.log(`Strategy ${i + 1} returned invalid coordinates`);
+              continue; // Try next strategy
+            }
+
+            console.log(`Strategy ${i + 1} succeeded:`, {
+              lat: latitude,
+              lon: longitude,
+              display_name: bestResult.display_name
+            });
+
+            return {
+              location: bestResult.display_name,
+              coordinates: {
+                type: "Point",
+                coordinates: [longitude, latitude]
+              },
+              latitude,
+              longitude,
+              geocoding_level: getGeocodingLevel(bestResult, addressToTry),
+              strategy_used: i + 1,
+              strategy_query: addressToTry
+            };
           }
-
-          return {
-            location: data[0].display_name,
-            coordinates: {
-              type: "Point",
-              coordinates: [longitude, latitude]
-            },
-            latitude,
-            longitude,
-            geocoding_level: getGeocodingLevel(data[0], addressToTry)
-          };
         }
       } catch (strategyError) {
-        console.log(`Strategy failed: ${strategyError.message}`);
+        console.log(`Strategy ${i + 1} failed:`, strategyError.message);
         continue; // Try next strategy
       }
     }
@@ -81,13 +118,72 @@ const geocodeAddress = async (address) => {
   }
 };
 
+// Helper function to find the best result from multiple results
+const findBestResult = (results, query) => {
+  if (results.length === 1) return results[0];
+  
+  // Prefer results with higher importance or better type
+  const scored = results.map(result => ({
+    result,
+    score: calculateResultScore(result, query)
+  }));
+  
+  // Sort by score (higher is better)
+  scored.sort((a, b) => b.score - a.score);
+  
+  return scored[0].result;
+};
+
+// Helper function to score results
+const calculateResultScore = (result, query) => {
+  let score = 0;
+  
+  // Higher importance is better
+  if (result.importance) {
+    score += result.importance * 100;
+  }
+  
+  // Prefer more specific types
+  const typeScore = {
+    'house': 10,
+    'building': 9,
+    'road': 8,
+    'street': 7,
+    'neighbourhood': 6,
+    'suburb': 5,
+    'city': 4,
+    'town': 3,
+    'village': 2,
+    'state': 1
+  };
+  
+  if (result.type && typeScore[result.type]) {
+    score += typeScore[result.type];
+  }
+  
+  // Prefer results that contain more of the original query terms
+  const queryWords = query.toLowerCase().split(/\s+/);
+  const displayWords = result.display_name.toLowerCase().split(/\s+/);
+  
+  const matchingWords = queryWords.filter(word => 
+    displayWords.some(displayWord => displayWord.includes(word))
+  );
+  
+  score += (matchingWords.length / queryWords.length) * 10;
+  
+  return score;
+};
+
 // Helper function to extract area-based address
 const getAreaBasedAddress = (address) => {
   // Extract area name, city, state from Indian address
-  const parts = address.split(',').map(part => part.trim());
+  const parts = address.split(',').map(part => part.trim()).filter(part => part.length > 0);
   if (parts.length >= 3) {
     // Skip the first part (usually street/house details) and take area + city + state
     return parts.slice(1).join(', ');
+  } else if (parts.length >= 2) {
+    // If only 2 parts, take both
+    return parts.join(', ');
   }
   return address;
 };
@@ -95,12 +191,40 @@ const getAreaBasedAddress = (address) => {
 // Helper function to extract city-based address
 const getCityBasedAddress = (address) => {
   // Extract only city, state, country from Indian address
-  const parts = address.split(',').map(part => part.trim());
+  const parts = address.split(',').map(part => part.trim()).filter(part => part.length > 0);
   if (parts.length >= 2) {
     // Take last 2-3 parts (city, state, country)
-    return parts.slice(-3).join(', ');
+    const cityParts = parts.slice(-2); // Take last 2 parts
+    return cityParts.join(', ');
   }
   return address;
+};
+
+// Helper function to extract district-based address
+const getDistrictBasedAddress = (address) => {
+  // Extract only city and country for very broad search
+  const parts = address.split(',').map(part => part.trim()).filter(part => part.length > 0);
+  
+  // Look for city names (typically the second-to-last or third-to-last part)
+  const cityKeywords = ['hyderabad', 'bangalore', 'mumbai', 'delhi', 'chennai', 'kolkata', 'pune', 'ahmedabad'];
+  
+  for (const part of parts) {
+    if (cityKeywords.some(city => part.toLowerCase().includes(city))) {
+      return `${part}, India`;
+    }
+  }
+  
+  // Fallback: just take the largest part that looks like a city
+  if (parts.length >= 1) {
+    const lastPart = parts[parts.length - 1];
+    if (lastPart.toLowerCase() !== 'india') {
+      return `${lastPart}, India`;
+    } else if (parts.length >= 2) {
+      return `${parts[parts.length - 2]}, India`;
+    }
+  }
+  
+  return "India"; // Ultimate fallback
 };
 
 // Helper function to determine geocoding accuracy level
@@ -163,7 +287,8 @@ const geocodeWithPositionstack = async (address) => {
         coordinates: [result.longitude, result.latitude]
       },
       latitude: result.latitude,
-      longitude: result.longitude
+      longitude: result.longitude,
+      geocoding_level: 'approximate'
     };
   }
   
@@ -188,7 +313,8 @@ const geocodeWithMapbox = async (address) => {
         coordinates: result.geometry.coordinates
       },
       latitude: result.geometry.coordinates[1],
-      longitude: result.geometry.coordinates[0]
+      longitude: result.geometry.coordinates[0],
+      geocoding_level: 'approximate'
     };
   }
   
