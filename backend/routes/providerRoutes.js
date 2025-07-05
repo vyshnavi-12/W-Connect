@@ -92,10 +92,10 @@ router.post("/accept-request/:requestId", protect, async (req, res) => {
       });
     }
 
-    // Create new consumer with validated data
+    // Create new consumer with original location and coordinates from pending request
     const newConsumer = new Consumer({
       shopName: pendingRequest.shopName,
-      location: pendingRequest.location,
+      location: pendingRequest.location, // Keep original user-entered location
       coordinates: {
         type: "Point",
         coordinates: [pendingRequest.longitude, pendingRequest.latitude], // [longitude, latitude]

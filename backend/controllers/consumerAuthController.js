@@ -63,13 +63,17 @@ const registerConsumer = async (req, res) => {
       });
     }
 
-    // Geocode consumer location with enhanced error handling
-    let geoData;
+    // Geocode consumer location ONLY for coordinates - keep original location text
+    let coordinates, latitude, longitude;
     try {
-      geoData = await geocodeAddress(location);
+      const geoData = await geocodeAddress(location);
       if (!geoData.latitude || !geoData.longitude) {
         throw new Error("Invalid coordinates from geocoding");
       }
+      
+      coordinates = geoData.coordinates;
+      latitude = geoData.latitude;
+      longitude = geoData.longitude;
       
       // Log geocoding accuracy for debugging
       console.log(`Geocoding successful with level: ${geoData.geocoding_level || 'unknown'}`);
@@ -100,21 +104,19 @@ const registerConsumer = async (req, res) => {
     // Hash the secretCode
     const hashedCode = await bcrypt.hash(secretCode, 10);
 
-    // Create new pending request with enhanced location data
+    // Create new pending request with original location text and geocoded coordinates
     const newPendingRequest = new PendingRequest({
       shopName,
-      location: geoData.location,
-      coordinates: geoData.coordinates,
-      latitude: geoData.latitude,
-      longitude: geoData.longitude,
+      location: location, // Store original user-entered location
+      coordinates: coordinates,
+      latitude: latitude,
+      longitude: longitude,
       email,
       secretCode: hashedCode,
       productDetails,
       needsStorage,
       connectedProvider: provider._id,
-      status: "pending",
-      // Optional: Store geocoding accuracy level for future reference
-      geocodingLevel: geoData.geocoding_level || 'unknown'
+      status: "pending"
     });
 
     await newPendingRequest.save();
@@ -124,11 +126,6 @@ const registerConsumer = async (req, res) => {
       success: true,
       message: "Consumer registration request submitted successfully"
     };
-
-    // Add geocoding info if precision is low
-    if (geoData.geocoding_level === 'approximate' || geoData.geocoding_level === 'city_level') {
-      responseData.locationNote = "Location was found at city/area level. For more precise matching with providers, consider providing a more specific address.";
-    }
 
     return res.status(201).json(responseData);
     

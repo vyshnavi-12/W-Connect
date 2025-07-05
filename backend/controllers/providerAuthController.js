@@ -1,7 +1,7 @@
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const Provider = require("../models/Provider");
-const geocodeAddress = require("../utils/geocode");
+const { geocodeAddress } = require("../utils/geocode");
 
 const JWT_SECRET = process.env.JWT_SECRET;
 
@@ -29,13 +29,18 @@ const registerProvider = async (req, res) => {
       return res.status(400).json({ message: `Provider with this ${field} already exists` });
     }
 
-    // Geocode location
-    let geoData;
+    // Geocode location ONLY for coordinates - keep original location text
+    let coordinates, latitude, longitude;
     try {
-      geoData = await geocodeAddress(location);
-      if (!geoData.location || !geoData.coordinates) {
+      const geoData = await geocodeAddress(location);
+      if (!geoData.latitude || !geoData.longitude) {
         throw new Error("Geocoding returned incomplete data");
       }
+      
+      coordinates = geoData.coordinates;
+      latitude = geoData.latitude;
+      longitude = geoData.longitude;
+      
     } catch (geoError) {
       console.error("Geocoding error:", geoError.message);
       return res.status(400).json({ 
@@ -47,13 +52,13 @@ const registerProvider = async (req, res) => {
     // Hash the secretCode
     const hashedCode = await bcrypt.hash(secretCode, 10);
 
-    // Create new provider
+    // Create new provider with original location text and geocoded coordinates
     const newProvider = new Provider({
       shopName,
-      location: geoData.location,
-      coordinates: geoData.coordinates,
-      latitude: geoData.latitude,
-      longitude: geoData.longitude,
+      location: location, // Store original user-entered location
+      coordinates: coordinates,
+      latitude: latitude,
+      longitude: longitude,
       email,
       secretCode: hashedCode
     });
