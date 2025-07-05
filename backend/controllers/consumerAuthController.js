@@ -2,7 +2,7 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const { PendingRequest, Consumer } = require("../models/Consumer");
 const Provider = require("../models/Provider");
-const geocodeAddress = require("../utils/geocode");
+const { geocodeAddress } = require("../utils/geocode"); // Updated import
 
 const JWT_SECRET = process.env.JWT_SECRET;
 
@@ -63,18 +63,36 @@ const registerConsumer = async (req, res) => {
       });
     }
 
-    // Geocode consumer location
+    // Geocode consumer location with enhanced error handling
     let geoData;
     try {
       geoData = await geocodeAddress(location);
       if (!geoData.latitude || !geoData.longitude) {
         throw new Error("Invalid coordinates from geocoding");
       }
+      
+      // Log geocoding accuracy for debugging
+      console.log(`Geocoding successful with level: ${geoData.geocoding_level || 'unknown'}`);
+      
+      // Warn if geocoding is very imprecise
+      if (geoData.geocoding_level === 'approximate') {
+        console.warn(`Low precision geocoding for address: ${location}`);
+      }
+      
     } catch (geoError) {
       console.error("Geocoding error:", geoError.message);
+      
+      // Provide more specific error messages based on the geocoding failure
+      let errorMessage = "Could not validate location";
+      if (geoError.message.includes("No results found")) {
+        errorMessage = "Location not found. Please provide a more specific address or check spelling.";
+      } else if (geoError.message.includes("All geocoding strategies failed")) {
+        errorMessage = "Unable to locate the provided address. Please provide a more complete address with city and state/country.";
+      }
+      
       return res.status(400).json({
         success: false,
-        message: "Could not validate location",
+        message: errorMessage,
         details: geoError.message
       });
     }
@@ -82,7 +100,7 @@ const registerConsumer = async (req, res) => {
     // Hash the secretCode
     const hashedCode = await bcrypt.hash(secretCode, 10);
 
-    // Create new pending request
+    // Create new pending request with enhanced location data
     const newPendingRequest = new PendingRequest({
       shopName,
       location: geoData.location,
@@ -94,15 +112,26 @@ const registerConsumer = async (req, res) => {
       productDetails,
       needsStorage,
       connectedProvider: provider._id,
-      status: "pending"
+      status: "pending",
+      // Optional: Store geocoding accuracy level for future reference
+      geocodingLevel: geoData.geocoding_level || 'unknown'
     });
 
     await newPendingRequest.save();
 
-    return res.status(201).json({
+    // Enhanced success response
+    const responseData = {
       success: true,
       message: "Consumer registration request submitted successfully"
-    });
+    };
+
+    // Add geocoding info if precision is low
+    if (geoData.geocoding_level === 'approximate' || geoData.geocoding_level === 'city_level') {
+      responseData.locationNote = "Location was found at city/area level. For more precise matching with providers, consider providing a more specific address.";
+    }
+
+    return res.status(201).json(responseData);
+    
   } catch (error) {
     console.error("Registration error:", error.message);
     if (error.code === 11000) {
