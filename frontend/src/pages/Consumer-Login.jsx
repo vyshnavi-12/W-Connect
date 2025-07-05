@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Building2, Key, Mail, AlertCircle, CheckCircle, Clock, XCircle } from 'lucide-react';
+import { Mail, Key, AlertCircle, CheckCircle, Clock, XCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import axios from "axios";
 
@@ -7,7 +7,6 @@ const ConsumerLogin = () => {
   const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
-    shopName: '',
     email: '',
     secretCode: ''
   });
@@ -35,10 +34,6 @@ const ConsumerLogin = () => {
   const validateForm = () => {
     const newErrors = {};
 
-    if (!formData.shopName.trim()) {
-      newErrors.shopName = 'Shop name is required';
-    }
-
     if (!formData.email.trim()) {
       newErrors.email = 'Email is required';
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email.trim())) {
@@ -65,30 +60,21 @@ const ConsumerLogin = () => {
       const { token, status, message, details } = res.data;
 
       if (status === 'accepted') {
-        // Store the token and redirect to dashboard
         localStorage.setItem("token", token);
         localStorage.setItem("authConsumer", "true");
-        
         setIsSuccess(true);
         setTimeout(() => {
           setIsSuccess(false);
           navigate('/consumer-dashboard');
         }, 1500);
-      } else if (status === 'pending') {
-        // Show pending status message
+      } else {
         setStatusMessage({
-          type: 'pending',
-          title: 'Request Still Pending',
-          message: details || 'The provider still didn\'t accept your request. Please wait for approval.',
-          icon: Clock
-        });
-      } else if (status === 'rejected') {
-        // Show rejected status message
-        setStatusMessage({
-          type: 'rejected',
-          title: 'Request Rejected',
-          message: details || 'Your request has been rejected by the provider. Please try registering with a different provider.',
-          icon: XCircle
+          type: status,
+          title: status === 'pending' ? 'Request Still Pending' : 'Request Rejected',
+          message: details || (status === 'pending' 
+            ? "The provider still didn't accept your request. Please wait for approval."
+            : "Your request has been rejected by the provider. Please try registering with a different provider."),
+          icon: status === 'pending' ? Clock : XCircle
         });
       }
 
@@ -96,7 +82,7 @@ const ConsumerLogin = () => {
       const errorMessage = error.response?.data?.message || 'Something went wrong';
 
       if (errorMessage === 'Invalid credentials') {
-        setErrors({ submit: 'Invalid shop name, email, or secret code' });
+        setErrors({ submit: 'Invalid email or secret code' });
       } else {
         setErrors({ submit: errorMessage });
       }
@@ -159,18 +145,14 @@ const ConsumerLogin = () => {
 
   return (
     <div className="w-screen h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-yellow-50 p-4 relative">
-      
-      {/* Back Button */}
       <button
         onClick={() => navigate('/')}
         className="absolute top-4 right-4 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium"
       >
-        &#8592; Back
+        ← Back
       </button>
 
       <div className="bg-white p-6 md:p-10 rounded-2xl shadow-lg w-full max-w-md flex flex-col justify-center">
-
-        {/* Title */}
         <h1 className="text-3xl font-bold text-center text-blue-900 mb-1">Welcome Back</h1>
         <h2 className="text-xl font-semibold text-center text-blue-700 mb-6">Consumer Login</h2>
 
@@ -186,30 +168,6 @@ const ConsumerLogin = () => {
           renderStatusMessage()
         ) : (
           <div className="space-y-6">
-            {/* Shop Name */}
-            <div>
-              <label className="block text-sm font-semibold text-blue-900 mb-1">Shop Name</label>
-              <div className="relative">
-                <Building2 className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                <input
-                  type="text"
-                  name="shopName"
-                  value={formData.shopName}
-                  onChange={handleInputChange}
-                  className={`w-full pl-9 pr-3 py-2.5 border rounded-lg focus:outline-none focus:ring-2 text-sm ${
-                    errors.shopName ? 'border-red-500 focus:ring-red-300' : 'border-gray-300 focus:ring-blue-300'
-                  }`}
-                  placeholder="Enter your shop name"
-                />
-              </div>
-              {errors.shopName && (
-                <p className="text-red-600 text-xs mt-1 flex items-center">
-                  <AlertCircle className="w-3 h-3 mr-1" /> {errors.shopName}
-                </p>
-              )}
-            </div>
-
-            {/* Email Address */}
             <div>
               <label className="block text-sm font-semibold text-blue-900 mb-1">Email Address</label>
               <div className="relative">
@@ -232,7 +190,6 @@ const ConsumerLogin = () => {
               )}
             </div>
 
-            {/* Secret Code */}
             <div>
               <label className="block text-sm font-semibold text-blue-900 mb-1">Secret Code</label>
               <div className="relative">
@@ -255,7 +212,6 @@ const ConsumerLogin = () => {
               )}
             </div>
 
-            {/* Submit Error */}
             {errors.submit && (
               <div className="flex items-center p-2.5 bg-red-50 border border-red-200 rounded-lg text-red-700 text-xs">
                 <AlertCircle className="w-3 h-3 mr-2" />
@@ -263,7 +219,6 @@ const ConsumerLogin = () => {
               </div>
             )}
 
-            {/* Login Button */}
             <button
               onClick={handleSubmit}
               disabled={isSubmitting}
@@ -274,7 +229,6 @@ const ConsumerLogin = () => {
               {isSubmitting ? 'Logging In...' : 'Login'}
             </button>
 
-            {/* Not Registered Yet */}
             <div className="text-center mt-2">
               <p className="text-sm text-gray-600">
                 Not registered yet?{' '}
@@ -286,7 +240,6 @@ const ConsumerLogin = () => {
                 </span>
               </p>
             </div>
-
           </div>
         )}
       </div>

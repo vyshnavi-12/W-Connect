@@ -20,6 +20,7 @@ import PostStock from './pages/PostStock';
 
 // Auth Protection
 import PrivateRouteProvider from './components/PrivateRouteProvider';
+import ViewConnectedRetailers from './pages/ViewConnectedRetailer';
 // import PrivateRouteConsumer from './components/PrivateRouteConsumer'; // For future use
 
 function App() {
@@ -71,6 +72,14 @@ function App() {
           element={
             <PrivateRouteProvider>
               <PostStock />
+            </PrivateRouteProvider>
+          }
+        />
+        <Route
+          path="/connected-retailers"
+          element={
+            <PrivateRouteProvider>
+              <ViewConnectedRetailers />
             </PrivateRouteProvider>
           }
         />

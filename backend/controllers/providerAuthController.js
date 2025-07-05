@@ -1,101 +1,159 @@
+const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
 const Provider = require("../models/Provider");
 const geocodeAddress = require("../utils/geocode");
-const jwt = require("jsonwebtoken");
+
+const JWT_SECRET = process.env.JWT_SECRET;
 
 // Generate token with role
 const generateToken = (id, role) => {
-  return jwt.sign({ id, role }, process.env.JWT_SECRET, { expiresIn: "30d" });
+  if (!JWT_SECRET) {
+    throw new Error("JWT_SECRET is not defined in environment variables");
+  }
+  return jwt.sign({ id, role }, JWT_SECRET, { expiresIn: "30d" });
 };
 
 const registerProvider = async (req, res) => {
   try {
     const { shopName, location, email, secretCode } = req.body;
 
-    // Check if provider already exists by email
-    const existingProvider = await Provider.findOne({ email });
+    // Validate required fields
+    if (!shopName || !location || !email || !secretCode) {
+      return res.status(400).json({ message: "All fields are required" });
+    }
+
+    // Check if provider already exists
+    const existingProvider = await Provider.findOne({ $or: [{ email }, { shopName }] });
     if (existingProvider) {
-      return res.status(400).json({ message: "Email already in use" });
+      const field = existingProvider.email === email ? "email" : "shop name";
+      return res.status(400).json({ message: `Provider with this ${field} already exists` });
     }
 
-    // Check if shop name already exists
-    const existingShop = await Provider.findOne({ shopName });
-    if (existingShop) {
-      return res.status(400).json({ message: "Shop name already exists" });
+    // Geocode location
+    let geoData;
+    try {
+      geoData = await geocodeAddress(location);
+      if (!geoData.location || !geoData.coordinates) {
+        throw new Error("Geocoding returned incomplete data");
+      }
+    } catch (geoError) {
+      console.error("Geocoding error:", geoError.message);
+      return res.status(400).json({ 
+        message: "Could not validate location",
+        details: geoError.message 
+      });
     }
 
-    // Get latitude and longitude for the provided location
-    const { latitude, longitude } = await geocodeAddress(location);
+    // Hash the secretCode
+    const hashedCode = await bcrypt.hash(secretCode, 10);
 
+    // Create new provider
     const newProvider = new Provider({
       shopName,
-      location,
+      location: geoData.location,
+      coordinates: geoData.coordinates,
+      latitude: geoData.latitude,
+      longitude: geoData.longitude,
       email,
-      secretCode,
-      latitude,
-      longitude,
+      secretCode: hashedCode
     });
 
     await newProvider.save();
 
-    // Generate token with role included
+    // Generate token
     const token = generateToken(newProvider._id, "provider");
 
     res.status(201).json({
+      success: true,
       message: "Provider registered successfully",
       token,
-      providerId: newProvider._id,
+      provider: {
+        id: newProvider._id,
+        shopName: newProvider.shopName,
+        location: newProvider.location,
+        email: newProvider.email
+      }
     });
+
   } catch (error) {
-    console.error("Error registering provider:", error);
+    console.error("Registration error:", error);
     
-    // Handle MongoDB duplicate key error
     if (error.code === 11000) {
-      if (error.keyPattern?.shopName) {
-        return res.status(400).json({ 
-          message: "Shop name already exists",
-          code: 11000 
-        });
-      }
-      if (error.keyPattern?.email) {
-        return res.status(400).json({ 
-          message: "Email already exists", 
-          code: 11000 
-        });
-      }
-      // Generic duplicate key error
-      return res.status(400).json({ 
+      return res.status(400).json({
+        success: false,
         message: "Duplicate key error",
-        code: 11000
+        error: error.message
       });
     }
     
-    res.status(500).json({ message: "Server error" });
+    if (error.message === "JWT_SECRET is not defined in environment variables") {
+      return res.status(500).json({
+        success: false,
+        message: "Server configuration error. Please contact support.",
+        error: error.message
+      });
+    }
+    
+    res.status(500).json({
+      success: false,
+      message: "Registration failed",
+      error: error.message
+    });
   }
 };
 
 const loginProvider = async (req, res) => {
   try {
-    console.log("Login body:", req.body);
+    const { email, secretCode } = req.body;
 
-    const { shopName, email, secretCode } = req.body;
-
-    const provider = await Provider.findOne({ shopName, email });
-    if (!provider || provider.secretCode !== secretCode) {
-      return res.status(401).json({ message: "Invalid email or secret code" });
+    // Validate input
+    if (!email || !secretCode) {
+      return res.status(400).json({ 
+        success: false,
+        message: "Email and secret code are required" 
+      });
     }
 
-    // Generate token with role included
+    // Find provider with secretCode
+    const provider = await Provider.findOne({ email }).select('+secretCode');
+    if (!provider) {
+      return res.status(401).json({
+        success: false,
+        message: "Invalid credentials"
+      });
+    }
+
+    // Compare passwords
+    const isMatch = await bcrypt.compare(secretCode, provider.secretCode);
+    if (!isMatch) {
+      return res.status(401).json({
+        success: false,
+        message: "Invalid credentials"
+      });
+    }
+
+    // Generate token
     const token = generateToken(provider._id, "provider");
 
     res.status(200).json({
-      message: "Provider logged in successfully",
+      success: true,
+      message: "Login successful",
       token,
-      providerId: provider._id,
-      providerName: provider.shopName,
+      provider: {
+        id: provider._id,
+        shopName: provider.shopName,
+        location: provider.location,
+        email: provider.email
+      }
     });
+
   } catch (error) {
-    console.error("Login failed:", error);
-    res.status(500).json({ message: "Server error" });
+    console.error("Login error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Login failed",
+      error: error.message
+    });
   }
 };
 

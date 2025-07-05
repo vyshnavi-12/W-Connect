@@ -27,59 +27,52 @@ const ConsumerRegister = () => {
   });
 
   const [filteredProviders, setFilteredProviders] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [loadingProviders, setLoadingProviders] = useState(false);
+  const [loadingSubmit, setLoadingSubmit] = useState(false);
   const [noProvidersFound, setNoProvidersFound] = useState(false);
   const [errors, setErrors] = useState({});
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
-
     setFormData((prev) => ({
       ...prev,
       [name]: type === "checkbox" ? checked : value,
     }));
-
     if (errors[name]) {
-      setErrors((prev) => ({
-        ...prev,
-        [name]: "",
-      }));
+      setErrors((prev) => ({ ...prev, [name]: "" }));
     }
   };
 
   const handleFindProviders = async () => {
-    if (formData.location.trim() === "") {
-      alert("Please enter your location before finding providers.");
+    if (!formData.location.trim()) {
+      setErrors((prev) => ({ ...prev, location: "Location is required to find providers" }));
       return;
     }
 
-    setLoading(true);
+    setLoadingProviders(true);
     setNoProvidersFound(false);
     setFilteredProviders([]);
+    setErrors((prev) => ({ ...prev, selectedProvider: "" }));
 
     try {
       const response = await axios.get(
-        `http://localhost:5000/api/providers?location=${formData.location}`
+        `http://localhost:5000/api/providers?location=${encodeURIComponent(formData.location)}`
       );
-
       const providers = response.data.providers || [];
-
       if (providers.length === 0) {
         setNoProvidersFound(true);
-        setFilteredProviders([]);
       } else {
-        const sortedProviders = providers.sort(
-          (a, b) => a.distance - b.distance
-        );
-        setFilteredProviders(sortedProviders);
+        setFilteredProviders(providers); // Providers are already filtered and sorted by backend
       }
     } catch (error) {
       console.error("Error fetching providers:", error);
-      alert("Error fetching providers. Please try again.");
+      setErrors((prev) => ({
+        ...prev,
+        selectedProvider: "Failed to fetch providers. Please check your location and try again.",
+      }));
     } finally {
-      setLoading(false);
+      setLoadingProviders(false);
     }
   };
 
@@ -91,6 +84,9 @@ const ConsumerRegister = () => {
         products: [...prev.products, trimmedInput],
         productInput: "",
       }));
+      if (errors.products) {
+        setErrors((prev) => ({ ...prev, products: "" }));
+      }
     }
   };
 
@@ -104,33 +100,20 @@ const ConsumerRegister = () => {
   const validateForm = () => {
     const newErrors = {};
 
-    if (!formData.shopName.trim()) {
-      newErrors.shopName = "Shop name is required";
-    }
-
-    if (!formData.location.trim()) {
-      newErrors.location = "Location is required";
-    }
-
+    if (!formData.shopName.trim()) newErrors.shopName = "Shop name is required";
+    if (!formData.location.trim()) newErrors.location = "Location is required";
     if (!formData.email.trim()) {
       newErrors.email = "Email is required";
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email.trim())) {
       newErrors.email = "Please enter a valid email address";
     }
-
     if (!formData.secretCode.trim()) {
       newErrors.secretCode = "Secret code is required";
-    } else if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(formData.secretCode)) {
-      newErrors.secretCode = "Must contain uppercase, lowercase, and a number";
+    } else if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/.test(formData.secretCode)) {
+      newErrors.secretCode = "Must contain uppercase, lowercase, number, and be at least 8 characters";
     }
-
-    if (formData.products.length === 0) {
-      newErrors.products = "At least one product is required";
-    }
-
-    if (!formData.selectedProvider) {
-      newErrors.selectedProvider = "Select a provider";
-    }
+    if (formData.products.length === 0) newErrors.products = "At least one product is required";
+    if (!formData.selectedProvider) newErrors.selectedProvider = "Select a provider";
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -141,7 +124,7 @@ const ConsumerRegister = () => {
 
     if (!validateForm()) return;
 
-    setIsSubmitting(true);
+    setLoadingSubmit(true);
     setErrors({});
 
     try {
@@ -159,29 +142,18 @@ const ConsumerRegister = () => {
         "http://localhost:5000/api/consumer/register",
         payload
       );
-
       console.log("Consumer Registered:", response.data);
-
       setIsSuccess(true);
 
       setTimeout(() => {
-        setIsSuccess(false);
-        alert("Request sent successfully! Please wait for provider approval.");
         navigate("/consumer-login");
       }, 1500);
     } catch (error) {
-      const errorMessage =
-        error.response?.data?.message || "Something went wrong";
-
-      if (errorMessage === "Email already in use") {
-        setErrors({ email: "This email is already registered" });
-      } else {
-        setErrors({ submit: errorMessage });
-      }
-
+      const errorMessage = error.response?.data?.message || "Something went wrong";
+      setErrors({ submit: errorMessage });
       console.error("Registration failed:", error);
     } finally {
-      setIsSubmitting(false);
+      setLoadingSubmit(false);
     }
   };
 
@@ -222,9 +194,7 @@ const ConsumerRegister = () => {
               <p className="text-gray-600 mb-4">
                 Your consumer registration request has been submitted.
               </p>
-              <p className="text-sm text-gray-500">
-                Please wait for provider approval...
-              </p>
+              <p className="text-sm text-gray-500">Redirecting to login...</p>
             </div>
           </div>
         ) : (
@@ -241,17 +211,13 @@ const ConsumerRegister = () => {
                   value={formData.shopName}
                   onChange={handleInputChange}
                   className={`w-full pl-9 pr-3 py-2.5 border rounded-lg focus:outline-none focus:ring-2 text-sm ${
-                    errors.shopName
-                      ? "border-red-500 focus:ring-red-300"
-                      : "border-gray-300 focus:ring-blue-300"
+                    errors.shopName ? "border-red-500 focus:ring-red-300" : "border-gray-300 focus:ring-blue-300"
                   }`}
                   placeholder="Enter your shop name"
                 />
               </div>
               {errors.shopName && (
-                <p className="text-red-500 text-sm mt-1 font-medium">
-                  {errors.shopName}
-                </p>
+                <p className="text-red-500 text-sm mt-1 font-medium">{errors.shopName}</p>
               )}
             </div>
 
@@ -267,17 +233,13 @@ const ConsumerRegister = () => {
                   onChange={handleInputChange}
                   rows={2}
                   className={`w-full pl-9 pr-3 py-2.5 border rounded-lg focus:outline-none focus:ring-2 resize-none text-sm ${
-                    errors.location
-                      ? "border-red-500 focus:ring-red-300"
-                      : "border-gray-300 focus:ring-blue-300"
+                    errors.location ? "border-red-500 focus:ring-red-300" : "border-gray-300 focus:ring-blue-300"
                   }`}
-                  placeholder="Enter complete address"
-                ></textarea>
+                  placeholder="Enter complete address (e.g., 123 Main St, Dallas, TX, USA)"
+                />
               </div>
               {errors.location && (
-                <p className="text-red-500 text-sm mt-1 font-medium">
-                  {errors.location}
-                </p>
+                <p className="text-red-500 text-sm mt-1 font-medium">{errors.location}</p>
               )}
             </div>
 
@@ -285,27 +247,30 @@ const ConsumerRegister = () => {
               <button
                 type="button"
                 onClick={handleFindProviders}
-                className="flex items-center bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
+                disabled={loadingProviders}
+                className={`flex items-center px-4 py-2 rounded-lg transition-colors ${
+                  loadingProviders
+                    ? "bg-gray-400 cursor-not-allowed"
+                    : "bg-green-600 text-white hover:bg-green-700"
+                }`}
               >
-                <Search className="w-4 h-4 mr-2" />
-                Find Providers
+                {loadingProviders ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Loading...
+                  </>
+                ) : (
+                  <>
+                    <Search className="w-4 h-4 mr-2" />
+                    Find Providers
+                  </>
+                )}
               </button>
-              <span className="text-gray-500 text-sm">
-                Click to fetch nearby providers
-              </span>
+              <span className="text-gray-500 text-sm">Click to fetch nearby providers</span>
             </div>
 
-            {loading && (
-              <div className="flex items-center space-x-2 text-blue-600 mb-2">
-                <Loader2 className="w-4 h-4 animate-spin" />
-                <span>Loading providers...</span>
-              </div>
-            )}
-
             {noProvidersFound && (
-              <p className="text-red-500 font-medium mb-2">
-                No providers found for the entered location.
-              </p>
+              <p className="text-red-500 font-medium mb-2">No providers found within 50km of your location.</p>
             )}
 
             <div>
@@ -317,23 +282,19 @@ const ConsumerRegister = () => {
                 value={formData.selectedProvider}
                 onChange={handleInputChange}
                 className={`w-full border rounded-lg py-2.5 px-4 focus:outline-none focus:ring-2 text-sm ${
-                  errors.selectedProvider
-                    ? "border-red-500 focus:ring-red-300"
-                    : "border-gray-300 focus:ring-blue-300"
+                  errors.selectedProvider ? "border-red-500 focus:ring-red-300" : "border-gray-300 focus:ring-blue-300"
                 }`}
                 required
               >
                 <option value="">Select a Provider</option>
-                {filteredProviders.map((provider, idx) => (
-                  <option key={idx} value={provider._id}>
-                    {`${provider.shopName} - ${provider.location}`}
+                {filteredProviders.map((provider) => (
+                  <option key={provider.id} value={provider.id}>
+                    {`${provider.shopName} - ${provider.location} (${provider.formattedDistance})`}
                   </option>
                 ))}
               </select>
               {errors.selectedProvider && (
-                <p className="text-red-500 text-sm mt-1 font-medium">
-                  {errors.selectedProvider}
-                </p>
+                <p className="text-red-500 text-sm mt-1 font-medium">{errors.selectedProvider}</p>
               )}
             </div>
 
@@ -349,17 +310,13 @@ const ConsumerRegister = () => {
                   value={formData.email}
                   onChange={handleInputChange}
                   className={`w-full pl-9 pr-3 py-2.5 border rounded-lg focus:outline-none focus:ring-2 text-sm ${
-                    errors.email
-                      ? "border-red-500 focus:ring-red-300"
-                      : "border-gray-300 focus:ring-blue-300"
+                    errors.email ? "border-red-500 focus:ring-red-300" : "border-gray-300 focus:ring-blue-300"
                   }`}
                   placeholder="Enter your email"
                 />
               </div>
               {errors.email && (
-                <p className="text-red-500 text-sm mt-1 font-medium">
-                  {errors.email}
-                </p>
+                <p className="text-red-500 text-sm mt-1 font-medium">{errors.email}</p>
               )}
             </div>
 
@@ -375,20 +332,16 @@ const ConsumerRegister = () => {
                   value={formData.secretCode}
                   onChange={handleInputChange}
                   className={`w-full pl-9 pr-3 py-2.5 border rounded-lg focus:outline-none focus:ring-2 text-sm ${
-                    errors.secretCode
-                      ? "border-red-500 focus:ring-red-300"
-                      : "border-gray-300 focus:ring-blue-300"
+                    errors.secretCode ? "border-red-500 focus:ring-red-300" : "border-gray-300 focus:ring-blue-300"
                   }`}
                   placeholder="Create secret code"
                 />
               </div>
               {errors.secretCode && (
-                <p className="text-red-500 text-sm mt-1 font-medium">
-                  {errors.secretCode}
-                </p>
+                <p className="text-red-500 text-sm mt-1 font-medium">{errors.secretCode}</p>
               )}
               <p className="text-xs text-gray-500 mt-1">
-                Must contain uppercase, lowercase, and a number
+                Must contain uppercase, lowercase, number, and be at least 8 characters
               </p>
             </div>
 
@@ -425,14 +378,7 @@ const ConsumerRegister = () => {
                       type="button"
                       onClick={() => handleRemoveProduct(product)}
                       className="text-red-500 hover:text-red-700 font-bold text-base leading-none"
-                      style={{
-                        background: "transparent",
-                        border: "none",
-                        outline: "none",
-                        cursor: "pointer",
-                        padding: "0",
-                        margin: "0",
-                      }}
+                      style={{ background: "transparent", border: "none", outline: "none", cursor: "pointer", padding: "0", margin: "0" }}
                     >
                       ×
                     </button>
@@ -440,9 +386,7 @@ const ConsumerRegister = () => {
                 ))}
               </div>
               {errors.products && (
-                <p className="text-red-500 text-sm mt-2 font-medium">
-                  {errors.products}
-                </p>
+                <p className="text-red-500 text-sm mt-2 font-medium">{errors.products}</p>
               )}
             </div>
 
@@ -454,28 +398,22 @@ const ConsumerRegister = () => {
                 onChange={handleInputChange}
                 className="w-4 h-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
               />
-              <label className="text-sm text-gray-700">
-                I am interested in future storage rentals
-              </label>
+              <label className="text-sm text-gray-700">I am interested in future storage rentals</label>
             </div>
 
             <button
               type="submit"
-              disabled={isSubmitting}
+              disabled={loadingSubmit}
               className={`w-full py-3 rounded-lg font-semibold text-white focus:outline-none transition-all text-sm ${
-                isSubmitting
-                  ? "bg-gray-400 cursor-not-allowed"
-                  : "bg-yellow-500 hover:bg-yellow-600"
+                loadingSubmit ? "bg-gray-400 cursor-not-allowed" : "bg-yellow-500 hover:bg-yellow-600"
               }`}
             >
-              {isSubmitting ? "Registering..." : "Register as Consumer"}
+              {loadingSubmit ? "Registering..." : "Register as Consumer"}
             </button>
 
             {errors.submit && (
               <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
-                <p className="text-red-500 text-sm font-medium">
-                  {errors.submit}
-                </p>
+                <p className="text-red-500 text-sm font-medium">{errors.submit}</p>
               </div>
             )}
 
