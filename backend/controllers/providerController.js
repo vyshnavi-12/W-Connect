@@ -1,4 +1,6 @@
 const Provider = require("../models/Provider");
+const { Consumer } = require("../models/Consumer");
+const { GeminiService } = require("../utils/geminiService");
 const { geocodeAddress } = require("../utils/geocode"); // Updated import - destructured
 
 const findProviders = async (req, res) => {
@@ -123,4 +125,135 @@ const findProviders = async (req, res) => {
   }
 };
 
-module.exports = { findProviders };
+// Post stock and find matching consumers
+const postStockAndFindConsumers = async (req, res) => {
+  try {
+    const { productName, originalPrice, discountOffering, category, quantity } = req.body;
+    const providerId = req.user.id; // Get provider ID from authenticated user
+
+    if (!productName || !originalPrice || !category || !quantity) {
+      return res.status(400).json({
+        success: false,
+        message: 'Product name, original price, category, and quantity are required'
+      });
+    }
+
+    // Find the provider to get their location
+    const provider = await Provider.findById(providerId);
+    if (!provider) {
+      return res.status(404).json({
+        success: false,
+        message: 'Provider not found'
+      });
+    }
+
+    // Find consumers connected to this provider (regardless of needsStorage status)
+    const allConsumers = await Consumer.find({
+      connectedProvider: providerId,
+      status: 'accepted'
+    })
+    .select('shopName location email productDetails needsStorage')
+    .sort({ acceptedAt: -1 });
+
+    console.log(`Found ${allConsumers.length} consumers connected to provider ${providerId}`);
+    console.log('Consumers:', allConsumers.map(c => ({ id: c._id, shopName: c.shopName, productDetails: c.productDetails })));
+
+    if (allConsumers.length === 0) {
+      return res.status(200).json({
+        success: true,
+        consumers: [],
+        count: 0,
+        message: 'No consumers found connected to this provider'
+      });
+    }
+
+    // Use AI to find matching consumers based on product name, with fallback to all consumers
+    try {
+      const matchingConsumersWithScores = [];
+      
+      for (const consumer of allConsumers) {
+        if (!consumer.productDetails || consumer.productDetails.length === 0) {
+          continue;
+        }
+
+        // Use AI to compare the posted product with consumer's product interests
+        const aiMatchingResult = await GeminiService.compareProductsIntelligently(
+          consumer.productDetails,
+          [productName.toLowerCase()]
+        );
+
+        if (aiMatchingResult && aiMatchingResult.hasAnyMatch) {
+          matchingConsumersWithScores.push({
+            ...consumer.toObject(),
+            matchingScore: aiMatchingResult.totalScore,
+            aiEnhanced: true
+          });
+        }
+      }
+
+      // Sort by matching score in descending order and limit to top 10
+      const topMatchingConsumers = matchingConsumersWithScores
+        .sort((a, b) => b.matchingScore - a.matchingScore)
+        .slice(0, 10)
+        .map(consumer => {
+          // Remove temporary fields from final response
+          const { matchingScore, aiEnhanced, ...consumerData } = consumer;
+          return {
+            ...consumerData,
+            id: consumerData._id.toString() // Add id field for frontend compatibility
+          };
+        });
+
+      return res.status(200).json({
+        success: true,
+        consumers: topMatchingConsumers,
+        count: topMatchingConsumers.length,
+        aiEnhanced: true,
+        stockPosted: {
+          productName,
+          originalPrice,
+          discountOffering,
+          category,
+          quantity
+        }
+      });
+
+    } catch (aiError) {
+      console.error('Error in AI matching, falling back to all consumers:', aiError.message);
+      console.log('Falling back to returning all connected consumers without AI matching');
+      
+      // Fallback: Return all connected consumers without product matching
+      const fallbackConsumers = allConsumers.map(consumer => ({
+        ...consumer.toObject(),
+        id: consumer._id.toString()
+      }));
+      
+      console.log(`Returning ${fallbackConsumers.length} fallback consumers`);
+      
+      return res.status(200).json({
+        success: true,
+        consumers: fallbackConsumers,
+        count: fallbackConsumers.length,
+        message: 'AI service unavailable - returning all connected consumers',
+        aiEnhanced: false,
+        stockPosted: {
+          productName,
+          originalPrice,
+          discountOffering,
+          category,
+          quantity
+        }
+      });
+    }
+
+  } catch (error) {
+    console.error('Error posting stock and finding consumers:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error posting stock and finding consumers',
+      error: error.message
+    });
+  }
+};
+
+module.exports = { findProviders, postStockAndFindConsumers };
