@@ -9,7 +9,8 @@ import {
   Users,
   FileText,
   Archive,
-  MessageSquare
+  MessageSquare,
+  Grid3X3
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
@@ -54,6 +55,10 @@ const Header = () => {
     navigate('/my-storage-postings');
   };
 
+  const handleDashboard = () => {
+    navigate('/dashboard');
+  };
+
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
@@ -86,6 +91,14 @@ const Header = () => {
 
       {/* Desktop Actions */}
       <div className="hidden lg:flex items-center space-x-3 relative">
+        {/* Dashboard */}
+        <button
+          onClick={handleDashboard}
+          className="p-2 rounded-full bg-blue-100 hover:bg-blue-200 transition-colors focus:outline-none focus:ring-0"
+          title="Dashboard"
+        >
+          <Grid3X3 className="w-5 h-5 text-blue-700" />
+        </button>
         {/* Post New Stock */}
         <button
           onClick={handlePostNewStock}
@@ -213,6 +226,17 @@ const Header = () => {
       {/* Mobile Menu */}
       {isMenuOpen && (
         <div className="absolute top-16 right-4 bg-white shadow-lg rounded-lg p-4 flex flex-col space-y-3 lg:hidden z-50 w-64 max-h-[calc(100vh-5rem)] overflow-y-auto custom-scrollbar">
+          {/* Dashboard */}
+          <button
+            onClick={() => {
+              setIsMenuOpen(false);
+              handleDashboard();
+            }}
+            className="flex items-center p-2 rounded-lg bg-blue-100 hover:bg-blue-200 transition-colors focus:outline-none focus:ring-0"
+          >
+            <Grid3X3 className="w-5 h-5 text-blue-700 mr-3" />
+            <span className="text-blue-700 font-medium">Dashboard</span>
+          </button>
           {/* Post New Stock */}
           <button
             onClick={() => {
