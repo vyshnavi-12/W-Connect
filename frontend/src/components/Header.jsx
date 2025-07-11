@@ -10,7 +10,11 @@ import {
   FileText,
   Archive,
   MessageSquare,
-  Grid3X3
+  Grid3X3,
+  AlertCircle,
+  Trash2,
+  BellOff,
+  Check
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
@@ -18,9 +22,46 @@ const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isMyPostingsOpen, setIsMyPostingsOpen] = useState(false);
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState("unread");
   const navigate = useNavigate();
   const dropdownRef = useRef(null);
   const myPostingsRef = useRef(null);
+  const notificationsRef = useRef(null);
+
+  // Notifications state
+  const [notifications, setNotifications] = useState([
+    {
+      id: 1,
+      message: "New message from Rama Retailers about your vegetable surplus",
+      timestamp: "2 minutes ago",
+      read: false,
+    },
+    {
+      id: 2,
+      message: "Your storage listing has been approved and is now visible",
+      timestamp: "3 hours ago",
+      read: false,
+    },
+    {
+      id: 3,
+      message: "New match found for your dairy products with Fresh Grocers",
+      timestamp: "1 day ago",
+      read: true,
+    },
+    {
+      id: 4,
+      message: "Reminder: Your vegetable listing expires in 2 days",
+      timestamp: "2 days ago",
+      read: true,
+    },
+    {
+      id: 5,
+      message: "System update: New matching algorithm deployed",
+      timestamp: "3 days ago",
+      read: true,
+    }
+  ]);
 
   const handleLogout = () => {
     localStorage.removeItem('token');
@@ -28,6 +69,11 @@ const Header = () => {
   };
 
   const handleNotifications = () => {
+    setIsNotificationsOpen(!isNotificationsOpen);
+  };
+
+  const handleViewAllNotifications = () => {
+    setIsNotificationsOpen(false);
     navigate('/notifications');
   };
 
@@ -59,6 +105,28 @@ const Header = () => {
     navigate('/dashboard');
   };
 
+  // Notification functions
+  const handleDelete = (id) => {
+    setNotifications((prev) => prev.filter((n) => n.id !== id));
+  };
+
+  const markAsRead = (id) => {
+    setNotifications((prev) =>
+      prev.map((n) =>
+        n.id === id ? { ...n, read: true } : n
+      )
+    );
+  };
+
+  const filteredNotifications = notifications.filter((n) => {
+    if (activeTab === "unread") return !n.read;
+    if (activeTab === "read") return n.read;
+    return true;
+  });
+
+  const unreadCount = notifications.filter((n) => !n.read).length;
+  const readCount = notifications.filter((n) => n.read).length;
+
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
@@ -66,6 +134,9 @@ const Header = () => {
       }
       if (myPostingsRef.current && !myPostingsRef.current.contains(event.target)) {
         setIsMyPostingsOpen(false);
+      }
+      if (notificationsRef.current && !notificationsRef.current.contains(event.target)) {
+        setIsNotificationsOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -165,14 +236,121 @@ const Header = () => {
         >
           <MessageSquare className="w-5 h-5 text-yellow-700" />
         </button>
-        {/* Notifications */}
-        <button
-          onClick={handleNotifications}
-          className="p-2 rounded-full bg-blue-100 hover:bg-blue-200 transition-colors focus:outline-none focus:ring-0"
-          title="Notifications"
-        >
-          <Bell className="w-5 h-5 text-blue-700" />
-        </button>
+        {/* Notifications Dropdown */}
+        <div className="relative" ref={notificationsRef}>
+          <button
+            onClick={handleNotifications}
+            className="p-2 rounded-full bg-blue-100 hover:bg-blue-200 transition-colors focus:outline-none focus:ring-0 relative"
+            title="Notifications"
+          >
+            <Bell className="w-5 h-5 text-blue-700" />
+            {unreadCount > 0 && (
+              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                {unreadCount}
+              </span>
+            )}
+          </button>
+          {isNotificationsOpen && (
+            <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-96 overflow-hidden">
+              <div className="p-4 border-b border-gray-200">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-lg font-semibold text-gray-800">Notifications</h3>
+                  <span className="text-sm text-gray-500">({unreadCount})</span>
+                </div>
+                
+                {/* Updated Tabs to match the image */}
+                <div className="flex border-b border-gray-200">
+                  <button
+                    onClick={() => setActiveTab("unread")}
+                    className={`px-4 py-2 text-sm font-medium focus:outline-none ${
+                      activeTab === "unread"
+                        ? "text-blue-600 border-b-2 border-blue-600 bg-white"
+                        : "text-gray-500 hover:text-gray-700 bg-white"
+                    }`}
+                  >
+                    Unread {unreadCount > 0 && <span className="ml-1 text-blue-600">{unreadCount}</span>}
+                  </button>
+                  <button
+                    onClick={() => setActiveTab("read")}
+                    className={`px-4 py-2 text-sm font-medium focus:outline-none ${
+                      activeTab === "read"
+                        ? "text-blue-600 border-b-2 border-blue-600 bg-white"
+                        : "text-gray-500 hover:text-gray-700 bg-white"
+                    }`}
+                  >
+                    Read {readCount > 0 && <span className="ml-1 text-gray-500">{readCount}</span>}
+                  </button>
+                  <button
+                    onClick={() => setActiveTab("all")}
+                    className={`px-4 py-2 text-sm font-medium focus:outline-none ${
+                      activeTab === "all"
+                        ? "text-blue-600 border-b-2 border-blue-600 bg-white"
+                        : "text-gray-500 hover:text-gray-700 bg-white"
+                    }`}
+                  >
+                    All <span className="ml-1 text-gray-500">{notifications.length}</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Notifications List */}
+              <div className="max-h-64 overflow-y-auto">
+                {filteredNotifications.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center h-32 text-gray-500">
+                    <AlertCircle className="w-8 h-8 mb-2" />
+                    <p className="text-sm">No notifications in this category.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-1">
+                    {filteredNotifications.slice(0, 5).map((n) => (
+                      <div
+                        key={n.id}
+                        className={`p-3 hover:bg-gray-50 flex items-start ${
+                          !n.read ? "bg-blue-50 border-l-4 border-blue-500" : ""
+                        }`}
+                      >
+                        <div className="flex-1 pr-2">
+                          <p className={`text-sm ${!n.read ? "font-medium text-gray-800" : "text-gray-600"}`}>
+                            {n.message}
+                          </p>
+                          <p className="text-xs text-gray-400 mt-1">{n.timestamp}</p>
+                        </div>
+                        <div className="flex space-x-1">
+                          {!n.read && (
+                            <button
+                              onClick={() => markAsRead(n.id)}
+                              title="Mark as read"
+                              className="p-1 rounded bg-white hover:bg-blue-100 text-blue-600 focus:outline-none"
+                            >
+                              <Check className="w-4 h-4" />
+                            </button>
+                          )}
+                          <button
+                            onClick={() => handleDelete(n.id)}
+                            title="Delete"
+                            className="p-1 rounded bg-white hover:bg-red-100 text-red-600 focus:outline-none"
+                            >
+                            <Trash2 className="w-4 h-4" />
+                            </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* View All Button with blue background */}
+              <div className="p-3 border-t border-gray-200">
+                <button
+                  onClick={handleViewAllNotifications}
+                  className="w-full text-center text-white bg-blue-700 hover:bg-blue-100 hover:text-blue-700 font-medium text-sm py-2 rounded-lg transition-colors focus:outline-none focus:ring-0"
+                >
+                  View all notifications
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
         {/* Settings Dropdown */}
         <div className="relative" ref={dropdownRef}>
           <button
@@ -315,6 +493,11 @@ const Header = () => {
           >
             <Bell className="w-5 h-5 text-blue-700 mr-3" />
             <span className="text-blue-700 font-medium">Notifications</span>
+            {unreadCount > 0 && (
+              <span className="ml-auto bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                {unreadCount}
+              </span>
+            )}
           </button>
           {/* Settings */}
           <div className="relative">
