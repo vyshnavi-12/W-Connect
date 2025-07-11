@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const { PendingRequest, Consumer } = require("../models/Consumer");
 const { protect } = require("../middleware/authMiddleware");
+const ChatMessage = require("../models/ChatMessage");
 
 // Get pending requests for a specific provider by provider ID
 router.get("/pending-requests/:providerId", protect, async (req, res) => {
@@ -200,11 +201,9 @@ router.get("/connected-consumers/:providerId", protect, async (req, res) => {
       return res.status(403).json({ message: "Not authorized as a provider" });
     }
     if (req.user.id !== providerId) {
-      return res
-        .status(403)
-        .json({
-          message: "Not authorized to view consumers for this provider",
-        });
+      return res.status(403).json({
+        message: "Not authorized to view consumers for this provider",
+      });
     }
 
     // Validate providerId
@@ -227,5 +226,21 @@ router.get("/connected-consumers/:providerId", protect, async (req, res) => {
 // Find providers functionality
 const { findProviders } = require("../controllers/providerController");
 router.get("/", findProviders);
+
+// GET chat messages with a consumer
+router.get("/chat-messages/:consumerId", async (req, res) => {
+  const providerId = req.user.id; // from auth middleware
+  const consumerId = req.params.consumerId;
+  const roomId = `${providerId}_${consumerId}`;
+  const messages = await ChatMessage.find({ roomId });
+  res.json(messages);
+});
+
+// routes/providerRoutes.js
+const {
+  getChatMessagesWithConsumer,
+} = require("../controllers/providerChatController");
+
+router.get("/chat-messages/:consumerId", protect, getChatMessagesWithConsumer);
 
 module.exports = router;

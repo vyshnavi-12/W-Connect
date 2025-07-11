@@ -24,16 +24,25 @@ const registerConsumer = async (req, res) => {
       secretCode,
       productDetails,
       needsStorage,
-      connectedProvider
+      connectedProvider,
     } = req.body;
 
     console.log("Received registration data:", req.body);
 
     // Validate required fields
-    if (!shopName || !location || !email || !secretCode || !productDetails || !productDetails.length || !connectedProvider) {
+    if (
+      !shopName ||
+      !location ||
+      !email ||
+      !secretCode ||
+      !productDetails ||
+      !productDetails.length ||
+      !connectedProvider
+    ) {
       return res.status(400).json({
         success: false,
-        message: "All fields are required, including at least one product and a provider"
+        message:
+          "All fields are required, including at least one product and a provider",
       });
     }
 
@@ -42,7 +51,7 @@ const registerConsumer = async (req, res) => {
     if (existingPending) {
       return res.status(400).json({
         success: false,
-        message: "Consumer with this email already has a pending registration"
+        message: "Consumer with this email already has a pending registration",
       });
     }
 
@@ -50,7 +59,7 @@ const registerConsumer = async (req, res) => {
     if (existingConsumer) {
       return res.status(400).json({
         success: false,
-        message: "Consumer with this email is already registered and accepted"
+        message: "Consumer with this email is already registered and accepted",
       });
     }
 
@@ -59,7 +68,7 @@ const registerConsumer = async (req, res) => {
     if (!provider) {
       return res.status(404).json({
         success: false,
-        message: "Selected provider not found"
+        message: "Selected provider not found",
       });
     }
 
@@ -70,34 +79,39 @@ const registerConsumer = async (req, res) => {
       if (!geoData.latitude || !geoData.longitude) {
         throw new Error("Invalid coordinates from geocoding");
       }
-      
+
       coordinates = geoData.coordinates;
       latitude = geoData.latitude;
       longitude = geoData.longitude;
-      
+
       // Log geocoding accuracy for debugging
-      console.log(`Geocoding successful with level: ${geoData.geocoding_level || 'unknown'}`);
-      
+      console.log(
+        `Geocoding successful with level: ${
+          geoData.geocoding_level || "unknown"
+        }`
+      );
+
       // Warn if geocoding is very imprecise
-      if (geoData.geocoding_level === 'approximate') {
+      if (geoData.geocoding_level === "approximate") {
         console.warn(`Low precision geocoding for address: ${location}`);
       }
-      
     } catch (geoError) {
       console.error("Geocoding error:", geoError.message);
-      
+
       // Provide more specific error messages based on the geocoding failure
       let errorMessage = "Could not validate location";
       if (geoError.message.includes("No results found")) {
-        errorMessage = "Location not found. Please provide a more specific address or check spelling.";
+        errorMessage =
+          "Location not found. Please provide a more specific address or check spelling.";
       } else if (geoError.message.includes("All geocoding strategies failed")) {
-        errorMessage = "Unable to locate the provided address. Please provide a more complete address with city and state/country.";
+        errorMessage =
+          "Unable to locate the provided address. Please provide a more complete address with city and state/country.";
       }
-      
+
       return res.status(400).json({
         success: false,
         message: errorMessage,
-        details: geoError.message
+        details: geoError.message,
       });
     }
 
@@ -116,7 +130,7 @@ const registerConsumer = async (req, res) => {
       productDetails,
       needsStorage,
       connectedProvider: provider._id,
-      status: "pending"
+      status: "pending",
     });
 
     await newPendingRequest.save();
@@ -124,24 +138,23 @@ const registerConsumer = async (req, res) => {
     // Enhanced success response
     const responseData = {
       success: true,
-      message: "Consumer registration request submitted successfully"
+      message: "Consumer registration request submitted successfully",
     };
 
     return res.status(201).json(responseData);
-    
   } catch (error) {
     console.error("Registration error:", error.message);
     if (error.code === 11000) {
       return res.status(400).json({
         success: false,
         message: "Duplicate key error",
-        error: error.message
+        error: error.message,
       });
     }
     return res.status(500).json({
       success: false,
       message: "Consumer registration failed",
-      error: error.message
+      error: error.message,
     });
   }
 };
@@ -156,19 +169,24 @@ const loginConsumer = async (req, res) => {
     if (!email || !secretCode) {
       return res.status(400).json({
         success: false,
-        message: "Email and secret code are required"
+        message: "Email and secret code are required",
       });
     }
 
     // Check if consumer is already accepted
-    const acceptedConsumer = await Consumer.findOne({ email }).select("+secretCode");
+    const acceptedConsumer = await Consumer.findOne({ email }).select(
+      "+secretCode"
+    );
     if (acceptedConsumer) {
-      const isMatch = await bcrypt.compare(secretCode, acceptedConsumer.secretCode);
+      const isMatch = await bcrypt.compare(
+        secretCode,
+        acceptedConsumer.secretCode
+      );
       if (!isMatch) {
         console.log("Password mismatch for accepted consumer");
         return res.status(401).json({
           success: false,
-          message: "Invalid credentials"
+          message: "Invalid credentials",
         });
       }
 
@@ -185,20 +203,25 @@ const loginConsumer = async (req, res) => {
           id: acceptedConsumer._id,
           shopName: acceptedConsumer.shopName,
           location: acceptedConsumer.location,
-          email: acceptedConsumer.email
-        }
+          email: acceptedConsumer.email,
+        },
       });
     }
 
     // Check pending requests
-    const pendingRequest = await PendingRequest.findOne({ email }).select("+secretCode");
+    const pendingRequest = await PendingRequest.findOne({ email }).select(
+      "+secretCode"
+    );
     if (pendingRequest) {
-      const isMatch = await bcrypt.compare(secretCode, pendingRequest.secretCode);
+      const isMatch = await bcrypt.compare(
+        secretCode,
+        pendingRequest.secretCode
+      );
       if (!isMatch) {
         console.log("Password mismatch for pending request");
         return res.status(401).json({
           success: false,
-          message: "Invalid credentials"
+          message: "Invalid credentials",
         });
       }
 
@@ -209,21 +232,21 @@ const loginConsumer = async (req, res) => {
         details:
           pendingRequest.status === "pending"
             ? "The provider has not yet accepted your request. Please wait for approval."
-            : "Your request has been rejected by the provider. Please try registering with a different provider."
+            : "Your request has been rejected by the provider. Please try registering with a different provider.",
       });
     }
 
     console.log("Consumer not found in any collection");
     return res.status(401).json({
       success: false,
-      message: "Invalid credentials"
+      message: "Invalid credentials",
     });
   } catch (error) {
     console.error("Login error:", error.message);
     return res.status(500).json({
       success: false,
       message: "Login failed",
-      error: error.message
+      error: error.message,
     });
   }
 };
