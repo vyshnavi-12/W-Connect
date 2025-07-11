@@ -2,6 +2,12 @@ const express = require("express");
 const router = express.Router();
 const { PendingRequest, Consumer } = require("../models/Consumer");
 const { protect } = require("../middleware/authMiddleware");
+const {
+  postStockAndFindConsumers,
+} = require("../controllers/providerController");
+
+// Post stock and find matching consumers
+router.post("/post-stock", protect, postStockAndFindConsumers);
 const ChatMessage = require("../models/ChatMessage");
 
 // Get pending requests for a specific provider by provider ID

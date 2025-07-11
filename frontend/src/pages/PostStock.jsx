@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react';
+import axios from 'axios';
 import Header from "../components/Header";
 import "../styles/post-stock.css";
 
@@ -56,78 +57,68 @@ const PostStock = () => {
   };
 
   const findConsumers = async () => {
+    // Validate required fields
+    if (!productName || !originalPrice || !category || !quantity) {
+      alert('Please fill in all required fields: Product Name, Original Price, Category, and Quantity');
+      return;
+    }
+
     setIsLoading(true);
     setShowConsumers(true);
-    
-    // Mock API call - replace with actual API
-    setTimeout(() => {
-      const mockConsumers = [
-        {
-          id: 1,
-          shopName: "Fresh Mart",
-          location: "Downtown Mall, NY",
-          distance: "1.5 km",
-          rating: 4.7,
-          interestedIn: "Groceries, Fresh Produce, Dairy",
-          budget: "$200-500/order",
-          urgency: "Within 24 hours"
-        },
-        {
-          id: 2,
-          shopName: "Tech World",
-          location: "Shopping Center, NY",
-          distance: "2.1 km",
-          rating: 4.8,
-          interestedIn: "Electronics, Gadgets, Accessories",
-          budget: "$500-1000/order",
-          urgency: "Within 3 days"
-        },
-        {
-          id: 3,
-          shopName: "Fashion Corner",
-          location: "Fashion District, NY",
-          distance: "2.8 km",
-          rating: 4.6,
-          interestedIn: "Clothing, Shoes, Accessories",
-          budget: "$300-800/order",
-          urgency: "Within 1 week"
-        },
-        {
-          id: 4,
-          shopName: "Book Haven",
-          location: "Literary District, NY",
-          distance: "3.2 km",
-          rating: 4.9,
-          interestedIn: "Books, Magazines, Stationery",
-          budget: "$100-300/order",
-          urgency: "Flexible"
-        },
-        {
-          id: 5,
-          shopName: "Home Essentials",
-          location: "Residential Area, NY",
-          distance: "1.8 km",
-          rating: 4.5,
-          interestedIn: "Home Goods, Furniture, Appliances",
-          budget: "$400-1200/order",
-          urgency: "ASAP"
-        },
-        {
-          id: 6,
-          shopName: "Sports Zone",
-          location: "Mall Plaza, NY",
-          distance: "2.5 km",
-          rating: 4.4,
-          interestedIn: "Sports Equipment, Fitness Gear",
-          budget: "$250-600/order",
-          urgency: "Within 2 weeks"
+
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        alert('Please login to continue');
+        return;
+      }
+
+      const response = await axios.post('http://localhost:5000/api/providers/post-stock', {
+        productName,
+        originalPrice,
+        discountOffering,
+        category,
+        quantity
+      }, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
         }
-      ];
+      });
+
+      if (response.data.success) {
+        const consumersData = response.data.consumers;
+        console.log('API Response:', response.data);
+        console.log('Consumers received:', consumersData);
+        console.log('Number of consumers:', consumersData.length);
+        
+        setConsumers(consumersData);
+        setSelectedConsumers(consumersData.map(consumer => consumer.id)); // Automatically select all consumers
+        
+        if (response.data.aiEnhanced) {
+          console.log('AI-enhanced matching used for top 10 consumers');
+        } else {
+          console.log('Fallback matching used - AI unavailable');
+        }
+      } else {
+        console.log('API Error:', response.data);
+        alert('Failed to find consumers: ' + response.data.message);
+      }
+    } catch (error) {
+      console.error('Error posting stock and finding consumers:', error);
+      console.log('Error response:', error.response?.data);
+      console.log('Error status:', error.response?.status);
       
-      setConsumers(mockConsumers);
-      setSelectedConsumers(mockConsumers.map(consumer => consumer.id)); // Automatically select all consumers
+      if (error.response?.status === 401) {
+        alert('Session expired. Please login again.');
+        localStorage.removeItem('token');
+        window.location.href = '/login';
+      } else {
+        alert('Failed to post stock and find consumers. Please try again later.');
+      }
+    } finally {
       setIsLoading(false);
-    }, 2000);
+    }
   };
 
   const handleConsumerSelection = (consumerId) => {
@@ -149,7 +140,17 @@ const PostStock = () => {
       .map(consumer => consumer.shopName);
     
     alert(`Stock notifications sent to: ${selectedShops.join(', ')}`);
+    
+    // Reset form after successful notification
     setSelectedConsumers([]);
+    setProductName('');
+    setOriginalPrice('');
+    setDiscountOffering('');
+    setCategory('');
+    setQuantity('');
+    setImagePreview(null);
+    setShowConsumers(false);
+    setConsumers([]);
   };
 
   return (
@@ -173,10 +174,21 @@ const PostStock = () => {
           <h1 className="text-center text-2xl lg:text-3xl font-bold mb-6 lg:mb-8 bg-gradient-to-r from-green-600 to-green-800 bg-clip-text text-transparent">
             Post Stock
           </h1>
+
+          <div className="mb-6 p-4 bg-blue-50 border-l-4 border-blue-500 rounded-lg">
+            <p className="text-sm text-blue-800">
+              <strong>Smart Matching:</strong> Our AI will automatically find the top 10 consumers most interested in your product based on their preferences and needs.
+            </p>
+            <p className="text-xs text-blue-600 mt-1">
+              Fields marked with <span className="text-red-500">*</span> are required
+            </p>
+          </div>
           
           {/* Image Upload Section */}
           <div className="mb-6">
-            <label className="block mb-2 font-semibold text-green-800 text-sm">Product Image</label>
+            <label className="block mb-2 font-semibold text-green-800 text-sm">
+              Product Image <span className="text-slate-500 font-normal">(Optional)</span>
+            </label>
             <div className="border-2 border-dashed border-slate-300 rounded-xl p-4 lg:p-5 text-center bg-slate-50 hover:border-green-600 hover:bg-gradient-to-br hover:from-green-50 hover:to-blue-50 transition-all duration-300">
               <div className="flex flex-col sm:flex-row gap-2 mb-4 justify-center">
                 <button
@@ -193,6 +205,15 @@ const PostStock = () => {
                 >
                   Capture Image
                 </button>
+                {imagePreview && (
+                  <button
+                    type="button"
+                    onClick={() => setImagePreview(null)}
+                    className="bg-gradient-to-r from-red-500 to-red-700 text-white px-4 lg:px-5 py-2 lg:py-3 rounded-lg font-semibold hover:-translate-y-0.5 hover:shadow-lg transition-all duration-300 text-sm"
+                  >
+                    Remove Image
+                  </button>
+                )}
               </div>
               <input
                 type="file"
@@ -212,7 +233,7 @@ const PostStock = () => {
               )}
               {!imagePreview && (
                 <div className="text-slate-500 text-sm mt-2">
-                  Choose an option to add your product image
+                  Add an image to make your product listing more attractive (optional)
                 </div>
               )}
             </div>
@@ -221,7 +242,7 @@ const PostStock = () => {
           {/* Product Name */}
           <div className="mb-6">
             <label htmlFor="productName" className="block mb-2 font-semibold text-green-800 text-sm">
-              Product Name
+              Product Name <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
@@ -230,13 +251,14 @@ const PostStock = () => {
               onChange={(e) => setProductName(e.target.value)}
               className="w-full p-3 border-2 border-slate-200 rounded-lg focus:outline-none focus:border-green-600 focus:ring-2 focus:ring-green-100 transition-all duration-300 bg-white"
               placeholder="e.g., Fresh Apples, iPhone 14, Winter Jacket"
+              required
             />
           </div>
 
           {/* Original Price */}
           <div className="mb-6">
             <label htmlFor="originalPrice" className="block mb-2 font-semibold text-green-800 text-sm">
-              Original Price
+              Original Price <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
@@ -245,13 +267,14 @@ const PostStock = () => {
               onChange={(e) => setOriginalPrice(e.target.value)}
               className="w-full p-3 border-2 border-slate-200 rounded-lg focus:outline-none focus:border-green-600 focus:ring-2 focus:ring-green-100 transition-all duration-300 bg-white"
               placeholder="e.g., $25, $500, $99.99"
+              required
             />
           </div>
 
           {/* Discount Offering */}
           <div className="mb-6">
             <label htmlFor="discountOffering" className="block mb-2 font-semibold text-green-800 text-sm">
-              Discount Offering
+              Discount Offering <span className="text-slate-500 font-normal">(Optional)</span>
             </label>
             <input
               type="text"
@@ -266,13 +289,14 @@ const PostStock = () => {
           {/* Category */}
           <div className="mb-6">
             <label htmlFor="category" className="block mb-2 font-semibold text-green-800 text-sm">
-              Category
+              Category <span className="text-red-500">*</span>
             </label>
             <select
               id="category"
               value={category}
               onChange={(e) => setCategory(e.target.value)}
               className="w-full p-3 border-2 border-slate-200 rounded-lg focus:outline-none focus:border-green-600 focus:ring-2 focus:ring-green-100 transition-all duration-300 bg-white"
+              required
             >
               <option value="">Select Category</option>
               <option value="excess-stock">Excess Stock</option>
@@ -283,7 +307,7 @@ const PostStock = () => {
           {/* Quantity Available */}
           <div className="mb-6">
             <label htmlFor="quantity" className="block mb-2 font-semibold text-green-800 text-sm">
-              Quantity Available
+              Quantity Available <span className="text-red-500">*</span>
             </label>
             <input
               type="number"
@@ -293,6 +317,7 @@ const PostStock = () => {
               className="w-full p-3 border-2 border-slate-200 rounded-lg focus:outline-none focus:border-green-600 focus:ring-2 focus:ring-green-100 transition-all duration-300 bg-white"
               placeholder="e.g., 50, 100, 200"
               min="1"
+              required
             />
           </div>
 
@@ -343,18 +368,21 @@ const PostStock = () => {
                         />
                       </div>
                       <div className="text-slate-600 text-sm space-y-1">
-                        <div>{consumer.location}</div>
-                        <div>Interested In: {consumer.interestedIn}</div>
-                        <div>Budget: {consumer.budget}</div>
-                        <div>Urgency: {consumer.urgency}</div>
-                      </div>
-                      <div className="flex gap-4 mt-2 text-xs">
-                        <div className="flex items-center gap-1 text-slate-500">
-                          <span className="text-green-800 font-semibold">{consumer.distance}</span>
-                        </div>
-                        <div className="flex items-center gap-1 text-slate-500">
-                          <span className="text-green-800 font-semibold">{consumer.rating}</span>
-                        </div>
+                        <div><strong>Location:</strong> {consumer.location}</div>
+                        <div><strong>Email:</strong> {consumer.email}</div>
+                        <div><strong>Storage Needed:</strong> {consumer.needsStorage ? 'Yes' : 'No'}</div>
+                        {consumer.productDetails && consumer.productDetails.length > 0 && (
+                          <div>
+                            <strong>Product Interests:</strong>
+                            <div className="flex flex-wrap gap-1 mt-1">
+                              {consumer.productDetails.map((product, index) => (
+                                <span key={index} className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs">
+                                  {product}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </div>
                   ))}
