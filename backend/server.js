@@ -6,7 +6,6 @@ const { Server } = require("socket.io");
 const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
-const consumerRoutes = require("./routes/consumerAuthRoutes");
 const connectDB = require("./config/database");
 const { protect } = require("./middleware/authMiddleware");
 const { getConsumer } = require("./controllers/consumerAuthController");
@@ -92,7 +91,6 @@ const testGeminiConnection = async () => {
 app.use("/api/provider", providerAuthRoutes);
 app.use("/api/providers", providerRoutes);
 app.use("/api/consumer", consumerAuthRoutes);
-app.use("/api/consumers", consumerAuthRoutes); // <-- add this line
 app.use("/api/consumers", consumerRoutes);
 
 // Add getConsumer endpoint directly

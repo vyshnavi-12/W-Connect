@@ -24,18 +24,30 @@ router.get("/pending-requests/:providerId", protect, async (req, res) => {
     }
 
     console.log("Fetching requests for provider ID:", providerId);
+    console.log("Request user ID:", req.user.id);
+    console.log("Provider ID from params:", providerId);
 
     // Validate providerId
     if (!providerId || providerId === "undefined") {
       return res.status(400).json({ message: "Invalid provider ID" });
     }
 
+    // First check all requests for this provider (for debugging)
+    const allRequestsForProvider = await PendingRequest.find({
+      connectedProvider: providerId
+    }).lean();
+    
+    console.log("All requests for provider:", allRequestsForProvider.length);
+    allRequestsForProvider.forEach(req => {
+      console.log(`Request: ${req.shopName} - Status: ${req.status} - ID: ${req._id}`);
+    });
+
     const requests = await PendingRequest.find({
       connectedProvider: providerId,
       status: "pending",
     }).lean();
 
-    console.log("Found requests:", requests.length);
+    console.log("Found pending requests:", requests.length);
     res.json(requests);
   } catch (err) {
     console.error("Error fetching pending requests:", err);
@@ -233,20 +245,80 @@ router.get("/connected-consumers/:providerId", protect, async (req, res) => {
 const { findProviders } = require("../controllers/providerController");
 router.get("/", findProviders);
 
-// GET chat messages with a consumer
-router.get("/chat-messages/:consumerId", async (req, res) => {
-  const providerId = req.user.id; // from auth middleware
-  const consumerId = req.params.consumerId;
-  const roomId = `${providerId}_${consumerId}`;
-  const messages = await ChatMessage.find({ roomId });
-  res.json(messages);
+// Debug endpoint to check all pending requests (remove in production)
+router.get("/debug/all-pending-requests", protect, async (req, res) => {
+  try {
+    if (req.user.role !== "provider") {
+      return res.status(403).json({ message: "Not authorized as a provider" });
+    }
+
+    console.log("DEBUG: Fetching ALL pending requests");
+    
+    const allRequests = await PendingRequest.find({}).lean();
+    const pendingRequests = await PendingRequest.find({ status: "pending" }).lean();
+    
+    console.log("DEBUG: Total requests in DB:", allRequests.length);
+    console.log("DEBUG: Pending requests in DB:", pendingRequests.length);
+    
+    res.json({
+      totalRequests: allRequests.length,
+      pendingRequests: pendingRequests.length,
+      allRequests: allRequests.map(req => ({
+        _id: req._id,
+        shopName: req.shopName,
+        email: req.email,
+        connectedProvider: req.connectedProvider,
+        status: req.status,
+        createdAt: req.createdAt
+      })),
+      pendingOnly: pendingRequests.map(req => ({
+        _id: req._id,
+        shopName: req.shopName,
+        email: req.email,
+        connectedProvider: req.connectedProvider,
+        status: req.status,
+        createdAt: req.createdAt
+      }))
+    });
+  } catch (err) {
+    console.error("DEBUG: Error fetching all requests:", err);
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
 });
 
-// routes/providerRoutes.js
-const {
-  getChatMessagesWithConsumer,
-} = require("../controllers/providerChatController");
+// Debug endpoint to check requests for specific provider
+router.get("/debug/provider-requests/:providerId", protect, async (req, res) => {
+  const { providerId } = req.params;
+  try {
+    if (req.user.role !== "provider") {
+      return res.status(403).json({ message: "Not authorized as a provider" });
+    }
 
-router.get("/chat-messages/:consumerId", protect, getChatMessagesWithConsumer);
+    console.log("DEBUG: Fetching requests for provider ID:", providerId);
+    
+    const allRequestsForProvider = await PendingRequest.find({
+      connectedProvider: providerId
+    }).lean();
+    
+    const pendingRequestsForProvider = await PendingRequest.find({
+      connectedProvider: providerId,
+      status: "pending"
+    }).lean();
+    
+    console.log("DEBUG: Total requests for provider:", allRequestsForProvider.length);
+    console.log("DEBUG: Pending requests for provider:", pendingRequestsForProvider.length);
+    
+    res.json({
+      providerId,
+      totalForProvider: allRequestsForProvider.length,
+      pendingForProvider: pendingRequestsForProvider.length,
+      allRequests: allRequestsForProvider,
+      pendingRequests: pendingRequestsForProvider
+    });
+  } catch (err) {
+    console.error("DEBUG: Error fetching provider requests:", err);
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
+});
 
 module.exports = router;

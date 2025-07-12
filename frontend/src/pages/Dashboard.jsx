@@ -41,15 +41,18 @@ const Dashboard = () => {
   const [error, setError] = useState(null);
   const [requestStatus, setRequestStatus] = useState({}); // Track loading state for each request
   const [lastFetch, setLastFetch] = useState(Date.now());
-  const [isPolling, setIsPolling] = useState(true);
+  const [isPolling, setIsPolling] = useState(true); // ENABLED POLLING
   const [pollingInterval, setPollingInterval] = useState(30000); // 30 seconds default
   
   const providerId = localStorage.getItem("providerId");
   const navigate = useNavigate();
   const pollingRef = useRef(null);
   const isComponentMounted = useRef(true);
+  
+  // Reset mounted status to true on each render (handles StrictMode double mounting)
+  isComponentMounted.current = true;
 
-  // Cleanup on unmount
+  // Cleanup on unmount - only set mounted to false in the cleanup
   useEffect(() => {
     return () => {
       isComponentMounted.current = false;
@@ -59,6 +62,7 @@ const Dashboard = () => {
     };
   }, []);
 
+  // Fetch requests function with useCallback for stable reference
   const fetchRequests = useCallback(async (showLoading = true) => {
     if (!providerId) {
       setError("Please log in to access the dashboard.");
@@ -73,24 +77,39 @@ const Dashboard = () => {
 
     try {
       const token = localStorage.getItem("token");
+      
       const res = await axios.get(
         `http://localhost:5000/api/providers/pending-requests/${providerId}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
           },
+          timeout: 10000, // 10 second timeout
         }
       );
       
       if (isComponentMounted.current) {
-        console.log("Fetched pending requests:", res.data);
-        setRequests(res.data || []); // Ensure requests is always an array
+        const responseData = res.data || [];
+        setRequests(responseData);
         setLastFetch(Date.now());
       }
     } catch (error) {
       if (isComponentMounted.current) {
-        const errorMessage =
-          error.response?.data?.message || "Failed to fetch pending requests.";
+        let errorMessage = "Failed to fetch pending requests.";
+        
+        if (error.code === 'ECONNABORTED') {
+          errorMessage = "Request timeout - server might be slow";
+        } else if (error.response?.status === 401) {
+          errorMessage = "Unauthorized - please login again";
+          localStorage.removeItem('token');
+          localStorage.removeItem('providerId');
+          navigate('/provider-login');
+        } else if (error.response?.status === 403) {
+          errorMessage = "Access denied - not authorized for this provider";
+        } else if (error.response?.data?.message) {
+          errorMessage = error.response.data.message;
+        }
+        
         setError(errorMessage);
         console.error("Error fetching requests:", error);
       }
@@ -101,6 +120,11 @@ const Dashboard = () => {
     }
   }, [providerId, navigate]);
 
+  // Manual refresh function
+  const handleManualRefresh = () => {
+    fetchRequests(true);
+  };
+
   // Initial fetch
   useEffect(() => {
     fetchRequests(true);
@@ -108,8 +132,10 @@ const Dashboard = () => {
 
   // Polling effect
   useEffect(() => {
-    if (!isPolling || !providerId) return;
-
+    if (!isPolling || !providerId) {
+      return;
+    }
+    
     pollingRef.current = setInterval(() => {
       fetchRequests(false); // Don't show loading spinner for background updates
     }, pollingInterval);
@@ -117,6 +143,7 @@ const Dashboard = () => {
     return () => {
       if (pollingRef.current) {
         clearInterval(pollingRef.current);
+        pollingRef.current = null;
       }
     };
   }, [isPolling, pollingInterval, fetchRequests, providerId]);
@@ -187,10 +214,6 @@ const Dashboard = () => {
       alert(errorMessage);
       console.error("Error rejecting request:", error);
     }
-  };
-
-  const handleManualRefresh = () => {
-    fetchRequests(true);
   };
 
   const togglePolling = () => {
@@ -323,6 +346,7 @@ const Dashboard = () => {
             {loading ? (
               <div className="flex justify-center items-center h-full">
                 <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
+                <div className="ml-2 text-sm text-gray-600">Loading requests...</div>
               </div>
             ) : error ? (
               <div className="flex items-center justify-center h-full text-red-600">
@@ -330,9 +354,12 @@ const Dashboard = () => {
                 <span>{error}</span>
               </div>
             ) : requests.length === 0 ? (
-              <p className="text-center text-gray-500 flex-1 flex items-center justify-center">
-                No pending consumer requests
-              </p>
+              <div className="text-center text-gray-500 flex-1 flex flex-col items-center justify-center">
+                <p>No pending consumer requests</p>
+                <p className="text-sm mt-2 text-gray-400">
+                  New requests will appear here automatically
+                </p>
+              </div>
             ) : (
               <div className="flex-1 overflow-y-auto space-y-4 pr-2 custom-scrollbar">
                 {requests.map((request) => (
