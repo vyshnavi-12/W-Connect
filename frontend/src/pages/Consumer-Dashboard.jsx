@@ -6,12 +6,17 @@ import { io } from 'socket.io-client';
 
 const socket = io('http://localhost:5000');
 
-const Header = () => (
+const Header = ({ onLogout }) => (
   <header className="consumer-header w-full bg-white shadow px-4 py-3 flex justify-between items-center border-b border-gray-200">
     <h1 className="text-xl font-bold text-blue-700">W-Connect</h1>
     <div className="flex items-center gap-4">
       <button className="text-gray-600 hover:text-blue-700 transition-colors">Profile</button>
-      <button className="text-gray-600 hover:text-blue-700 transition-colors">Logout</button>
+      <button 
+        onClick={onLogout}
+        className="text-gray-600 hover:text-blue-700 transition-colors"
+      >
+        Logout
+      </button>
     </div>
   </header>
 );
@@ -30,12 +35,21 @@ const ConsumerDashboard = () => {
 
   const messagesEndRef = useRef(null);
 
+  // Handle logout
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('consumerToken');
+    localStorage.removeItem('consumerId');
+    localStorage.removeItem('authConsumer');
+    window.location.href = '/consumer-login';
+  };
+
   // Fetch connected providers when search bar is focused
   const fetchConnectedProviders = async () => {
     setLoadingProviders(true);
     setErrorProviders(null);
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('consumerToken') || localStorage.getItem('token');
       const response = await fetch('http://localhost:5000/api/consumer/connected-providers', {
         headers: {
           "Authorization": `Bearer ${token}`,
@@ -70,39 +84,51 @@ const ConsumerDashboard = () => {
   };
 
   // Load chat messages for the selected provider
-  // Load chat messages for the selected provider
-const loadChatMessages = async (providerId) => {
-  try {
-    const token = localStorage.getItem('token');
-    const response = await fetch(`http://localhost:5000/api/consumer/chat-messages/${providerId}`, {
-      headers: {
-        "Authorization": `Bearer ${token}`
-      }
-    });
+  const loadChatMessages = async (providerId) => {
+    try {
+      console.log(`Loading chat messages for provider: ${providerId}`);
+      const token = localStorage.getItem('consumerToken') || localStorage.getItem('token');
+      const response = await fetch(`http://localhost:5000/api/consumer/chat-messages/${providerId}`, {
+        headers: {
+          "Authorization": `Bearer ${token}`
+        }
+      });
 
-    if (response.ok) {
-      const chatMessages = await response.json();
-      setMessages(chatMessages);
-    } else {
-      console.error("Failed to fetch messages");
+      if (response.ok) {
+        const chatMessages = await response.json();
+        console.log(`Loaded ${chatMessages.length} messages for provider ${providerId}`);
+        setMessages(chatMessages);
+      } else {
+        console.error("Failed to fetch messages");
+        setMessages([]);
+      }
+    } catch (error) {
+      console.error("Error loading chat messages:", error);
       setMessages([]);
     }
-  } catch (error) {
-    console.error("Error loading chat messages:", error);
-    setMessages([]);
-  }
-};
+  };
 
 
   // Handle provider selection
   const handleProviderSelect = (provider) => {
+    console.log('Consumer selecting provider:', provider);
     setSelectedChat(provider);
     setIsMobileMenuOpen(false);
     setShowDropdown(false);
     setSearchQuery('');
     loadChatMessages(provider.id);
+    
     const consumerId = localStorage.getItem('consumerId');
+    console.log('Consumer ID from localStorage:', consumerId);
+    console.log('Provider ID:', provider.id);
+    
+    if (!consumerId) {
+      console.error('Consumer ID not found in localStorage!');
+      return;
+    }
+    
     const roomId = `${provider.id}_${consumerId}`;
+    console.log(`Consumer joining room: ${roomId}`);
     socket.emit('joinRoom', roomId);
   };
 
@@ -110,7 +136,15 @@ const loadChatMessages = async (providerId) => {
   useEffect(() => {
     if (selectedChat) {
       const consumerId = localStorage.getItem('consumerId');
+      console.log('useEffect - Consumer ID:', consumerId, 'Provider ID:', selectedChat.id);
+      
+      if (!consumerId) {
+        console.error('Consumer ID not found in localStorage in useEffect!');
+        return;
+      }
+      
       const roomId = `${selectedChat.id}_${consumerId}`;
+      console.log(`Consumer joining room on selectedChat change: ${roomId}`);
       socket.emit('joinRoom', roomId);
     }
   }, [selectedChat]);
@@ -118,9 +152,11 @@ const loadChatMessages = async (providerId) => {
   // Listen for incoming messages
   useEffect(() => {
     socket.on('receiveMessage', (msg) => {
-      const consumerId=localStorage.getItem('consumerId');
-      if(msg.sender!=='consumer'){setMessages((prev) => [...prev, msg]);}
-      
+      console.log('Consumer received message:', msg);
+      // Add messages from provider (not from this consumer to avoid duplicates)
+      if (msg.sender !== 'consumer') {
+        setMessages((prev) => [...prev, msg]);
+      }
     });
     return () => socket.off('receiveMessage');
   }, []);
@@ -134,6 +170,13 @@ const loadChatMessages = async (providerId) => {
   const handleSendMessage = () => {
     if (message.trim() && selectedChat) {
       const consumerId = localStorage.getItem('consumerId');
+      console.log('Sending message - Consumer ID:', consumerId, 'Provider ID:', selectedChat.id);
+      
+      if (!consumerId) {
+        console.error('Consumer ID not found when sending message!');
+        return;
+      }
+      
       const providerId = selectedChat.id;
       const roomId = `${providerId}_${consumerId}`;
       const msgObj = {
@@ -143,6 +186,7 @@ const loadChatMessages = async (providerId) => {
         time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         status: 'sent'
       };
+      console.log(`Consumer sending message to room: ${roomId}`, msgObj);
       setMessages((prev) => [...prev, msgObj]);
       socket.emit('sendMessage', { roomId, message: msgObj });
       setMessage('');
@@ -159,7 +203,7 @@ const loadChatMessages = async (providerId) => {
   return (
     <div className="consumer-chat-page w-screen h-screen bg-gray-100 overflow-hidden flex flex-col">
       <div className="fixed top-0 left-0 w-full z-50">
-        <Header />
+        <Header onLogout={handleLogout} />
       </div>
       <div className="flex-1 pt-[72px] flex overflow-hidden">
         {/* Sidebar */}

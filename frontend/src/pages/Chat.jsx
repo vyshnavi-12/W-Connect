@@ -20,7 +20,7 @@ const Chat = () => {
   const messagesEndRef = useRef(null);
 
   const providerId = localStorage.getItem("providerId");
-  const token = localStorage.getItem("token");
+  const token = localStorage.getItem("providerToken") || localStorage.getItem("token");
 
   // Fetch connected consumers
   useEffect(() => {
@@ -41,25 +41,27 @@ const Chat = () => {
     if (providerId && token) fetchConnectedConsumers();
   }, [providerId, token]);
 
-  // Load chat messages for a selected consumer (implement your backend endpoint)
+  // Load chat messages for a selected consumer
   const loadChatMessages = async (consumerId) => {
-  try {
-    const response = await axios.get(
-      `http://localhost:5000/api/providers/chat-messages/${consumerId}`,
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
-    setMessages(response.data || []);
-  } catch (err) {
-    console.error("Failed to load messages:", err);
-    setMessages([]);
-  }
-};
+    try {
+      const response = await axios.get(
+        `http://localhost:5000/api/providers/chat-messages/${consumerId}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setMessages(response.data || []);
+    } catch (err) {
+      console.error("Failed to load messages:", err);
+      setMessages([]);
+    }
+  };
 
 
   // Handle consumer selection
   const handleConsumerSelection = (consumer) => {
     setSelectedChat({
       ...consumer,
+      id: consumer._id, // Use _id from MongoDB
+      name: consumer.shopName, // Add name property for display
       avatar: consumer.shopName[0]?.toUpperCase() || "C",
       type: "Consumer",
       online: false,
@@ -67,23 +69,31 @@ const Chat = () => {
     setIsMobileMenuOpen(false);
     setShowDropdown(false);
     setSearchQuery('');
+    
+    // Load chat messages for this consumer
+    loadChatMessages(consumer._id);
+    
+    // Join the socket room for real-time messaging
     const roomId = `${providerId}_${consumer._id}`;
-    loadChatMessages(consumer.id);
     socket.emit('joinRoom', roomId);
   };
 
   // Socket listeners
   useEffect(() => {
-    if (selectedChat) {
+    if (selectedChat && providerId) {
       const roomId = `${providerId}_${selectedChat.id}`;
       socket.emit('joinRoom', roomId);
     }
-  }, [selectedChat]);
+  }, [selectedChat, providerId]);
 
   useEffect(() => {
     socket.on('receiveMessage', (msg) => {
-      if(msg.sender!=='provider'){setMessages((prev) => [...prev, msg]);}
+      // Only add message if it's not from this provider (to avoid duplicates)
+      if (msg.sender !== 'provider') {
+        setMessages((prev) => [...prev, msg]);
+      }
     });
+    
     return () => socket.off('receiveMessage');
   }, []);
 
@@ -269,8 +279,8 @@ const Chat = () => {
                   </div>
                 ) : (
                   <>
-                    {messages.map((msg) => (
-                      <div key={msg.id} className={`flex ${msg.sender === 'provider' ? 'justify-end' : 'justify-start'}`}>
+                    {messages.map((msg, index) => (
+                      <div key={msg._id || msg.id || index} className={`flex ${msg.sender === 'provider' ? 'justify-end' : 'justify-start'}`}>
                         <div className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
                           msg.sender === 'provider' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-900'
                         }`}>
