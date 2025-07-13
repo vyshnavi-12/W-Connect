@@ -55,11 +55,17 @@ router.post("/login", loginConsumer);
 
 // GET chat messages with a provider
 router.get("/chat-messages/:providerId", async (req, res) => {
-  const consumerId = req.user.id; // always a string, matches frontend
-  const providerId = req.params.providerId;
-  const roomId = `${providerId}_${consumerId}`;
-  const messages = await ChatMessage.find({ roomId });
-  res.json(messages);
+  try {
+    const consumerId = req.user.id; // always a string, matches frontend
+    const providerId = req.params.providerId;
+    const roomId = `${providerId}_${consumerId}`;
+    
+    const messages = await ChatMessage.find({ roomId }).sort({ createdAt: 1 });
+    res.json(messages);
+  } catch (error) {
+    console.error("Error fetching consumer chat messages:", error);
+    res.status(500).json({ message: "Failed to fetch chat messages" });
+  }
 });
 
 module.exports = router;

@@ -6,6 +6,8 @@ const chatMessageSchema = new mongoose.Schema({
   content: { type: String, required: true },
   time: { type: String, required: true },
   status: { type: String, default: "sent" },
+}, {
+  timestamps: true // This adds createdAt and updatedAt fields
 });
 
 module.exports = mongoose.model("ChatMessage", chatMessageSchema);

@@ -64,7 +64,12 @@ const Header = () => {
   ]);
 
   const handleLogout = () => {
+    // Clear all possible tokens to ensure clean logout
     localStorage.removeItem('token');
+    localStorage.removeItem('providerToken');
+    localStorage.removeItem('consumerToken');
+    localStorage.removeItem('providerId');
+    localStorage.removeItem('consumerId');
     navigate('/login');
   };
 

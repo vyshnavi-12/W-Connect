@@ -10,6 +10,25 @@ const {
 router.post("/post-stock", protect, postStockAndFindConsumers);
 const ChatMessage = require("../models/ChatMessage");
 
+// Get chat messages with a specific consumer
+router.get("/chat-messages/:consumerId", protect, async (req, res) => {
+  try {
+    if (req.user.role !== "provider") {
+      return res.status(403).json({ message: "Not authorized as a provider" });
+    }
+    
+    const providerId = req.user.id;
+    const consumerId = req.params.consumerId;
+    const roomId = `${providerId}_${consumerId}`;
+    
+    const messages = await ChatMessage.find({ roomId }).sort({ createdAt: 1 });
+    res.json(messages);
+  } catch (error) {
+    console.error("Error fetching chat messages:", error);
+    res.status(500).json({ message: "Failed to fetch chat messages" });
+  }
+});
+
 // Get pending requests for a specific provider by provider ID
 router.get("/pending-requests/:providerId", protect, async (req, res) => {
   const { providerId } = req.params;

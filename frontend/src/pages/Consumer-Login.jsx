@@ -60,9 +60,10 @@ const ConsumerLogin = () => {
       const { token, status, message, details } = res.data;
 
       if (status === 'accepted') {
-        localStorage.setItem("token", token);
+        localStorage.setItem("consumerToken", token);
+        localStorage.setItem("token", token); // Keep for backward compatibility
         localStorage.setItem("authConsumer", "true");
-        localStorage.setItem("consumerId",res.data.consumerId);
+        localStorage.setItem("consumerId", res.data.consumer.id);
         setIsSuccess(true);
         setTimeout(() => {
           setIsSuccess(false);
