@@ -12,6 +12,7 @@ import ConsumerLogin from './pages/Consumer-Login';
 import Chat from './pages/Chat';
 import PrivateRouteConsumer from './components/PrivateRouteConsumer';
 import ConsumerDashboard from './pages/Consumer-Dashboard';
+import ConsumerNotifications from './components/Consumer-Notifications';
 
 // Components
 import Notifications from './components/Notifications';
@@ -84,12 +85,28 @@ function App() {
           }
         />
 
-        {/* Example Protected Route for Consumer - Uncomment when ready */}
+        {/* Protected Routes for Consumer */}
         <Route
           path="/consumer-dashboard"
           element={
             <PrivateRouteConsumer>
               <ConsumerDashboard />
+            </PrivateRouteConsumer>
+          }
+        />
+        <Route
+          path="/consumer-chat"
+          element={
+            <PrivateRouteConsumer>
+              <ConsumerDashboard />
+            </PrivateRouteConsumer>
+          }
+        />
+        <Route
+          path="/consumer-notifications"
+          element={
+            <PrivateRouteConsumer>
+              <ConsumerNotifications />
             </PrivateRouteConsumer>
           }
         />

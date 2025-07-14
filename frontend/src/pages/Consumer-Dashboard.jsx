@@ -3,23 +3,9 @@ import {
   Send, Search, Phone, Video, MoreVertical, Paperclip, Smile, ArrowLeft, Check, Filter
 } from 'lucide-react';
 import { io } from 'socket.io-client';
+import ConsumerHeader from '../components/Consumer-Header';
 
 const socket = io('http://localhost:5000');
-
-const Header = ({ onLogout }) => (
-  <header className="consumer-header w-full bg-white shadow px-4 py-3 flex justify-between items-center border-b border-gray-200">
-    <h1 className="text-xl font-bold text-blue-700">W-Connect</h1>
-    <div className="flex items-center gap-4">
-      <button className="text-gray-600 hover:text-blue-700 transition-colors">Profile</button>
-      <button 
-        onClick={onLogout}
-        className="text-gray-600 hover:text-blue-700 transition-colors"
-      >
-        Logout
-      </button>
-    </div>
-  </header>
-);
 
 const ConsumerDashboard = () => {
   const [selectedChat, setSelectedChat] = useState(null);
@@ -34,15 +20,6 @@ const ConsumerDashboard = () => {
   const [errorProviders, setErrorProviders] = useState(null);
 
   const messagesEndRef = useRef(null);
-
-  // Handle logout
-  const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('consumerToken');
-    localStorage.removeItem('consumerId');
-    localStorage.removeItem('authConsumer');
-    window.location.href = '/consumer-login';
-  };
 
   // Fetch connected providers when search bar is focused
   const fetchConnectedProviders = async () => {
@@ -107,7 +84,6 @@ const ConsumerDashboard = () => {
       setMessages([]);
     }
   };
-
 
   // Handle provider selection
   const handleProviderSelect = (provider) => {
@@ -203,7 +179,7 @@ const ConsumerDashboard = () => {
   return (
     <div className="consumer-chat-page w-screen h-screen bg-gray-100 overflow-hidden flex flex-col">
       <div className="fixed top-0 left-0 w-full z-50">
-        <Header onLogout={handleLogout} />
+        <ConsumerHeader />
       </div>
       <div className="flex-1 pt-[72px] flex overflow-hidden">
         {/* Sidebar */}

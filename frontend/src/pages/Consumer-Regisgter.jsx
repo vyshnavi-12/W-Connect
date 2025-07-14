@@ -139,7 +139,7 @@ const ConsumerRegister = () => {
       };
 
       const response = await axios.post(
-        "http://localhost:5000/api/consumers/register",
+        "http://localhost:5000/api/consumer/register",
         payload
       );
       console.log("Consumer Registered:", response.data);

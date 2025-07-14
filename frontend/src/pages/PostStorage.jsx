@@ -1,6 +1,7 @@
 import React, { useState, useRef } from "react";
 import Header from "../components/Header";
 import "../styles/post-storage.css";
+import axios from "axios"; // Added for API calls
 
 const PostStorage = () => {
   const [imagePreview, setImagePreview] = useState(null);
@@ -22,7 +23,6 @@ const PostStorage = () => {
       const reader = new FileReader();
       reader.onload = (e) => {
         setImagePreview(e.target.result);
-        // Clear validation error for image when file is selected
         setValidationErrors((prev) => ({ ...prev, image: "" }));
       };
       reader.readAsDataURL(file);
@@ -49,8 +49,6 @@ const PostStorage = () => {
 
         const imageData = canvas.toDataURL("image/png");
         setImagePreview(imageData);
-
-        // Clear validation error for image when captured
         setValidationErrors((prev) => ({ ...prev, image: "" }));
 
         stream.getTracks().forEach((track) => track.stop());
@@ -78,7 +76,6 @@ const PostStorage = () => {
   };
 
   const findConsumers = async () => {
-    // Validate form before proceeding
     if (!validateForm()) {
       alert("Please fill in all required fields before finding consumers");
       return;
@@ -91,36 +88,29 @@ const PostStorage = () => {
     setShowConsumers(true);
 
     try {
-      // Get the provider ID from localStorage or wherever you store it
       const providerId =
-        localStorage.getItem("providerId") || "673cc9f4c12b84b57bb5fcb8"; // Replace with actual provider ID
+        localStorage.getItem("providerId") || "673cc9f4c12b84b57bb5fcb8";
 
-      const response = await fetch(
+      const response = await axios.post(
         `http://localhost:5000/api/consumers/provider/${providerId}`,
         {
-          method: "POST",
+          productTypes: productTypes.trim(),
+        },
+        {
           headers: {
             "Content-Type": "application/json",
+            Authorization: `Bearer ${localStorage.getItem("providerToken")}`,
           },
-          body: JSON.stringify({
-            productTypes: productTypes.trim(),
-          }),
         }
       );
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to fetch consumers");
-      }
-
-      const data = await response.json();
+      const data = response.data;
 
       if (data.success) {
         setConsumers(data.consumers);
-        setSelectedConsumers(data.consumers.map((consumer) => consumer._id)); // Automatically select all consumers
+        setSelectedConsumers(data.consumers.map((consumer) => consumer._id));
         setAiEnhanced(data.aiEnhanced || false);
 
-        // Set matching statistics
         setMatchingStats({
           totalFound: data.count,
           searchedProducts: productTypes.split(",").map((type) => type.trim()),
@@ -156,22 +146,76 @@ const PostStorage = () => {
     }
 
     try {
-      const selectedShops = consumers
-        .filter((consumer) => selectedConsumers.includes(consumer._id))
-        .map((consumer) => consumer.shopName);
+      const providerId = localStorage.getItem("providerId") || "673cc9f4c12b84b57bb5fcb8";
+      const token = localStorage.getItem("providerToken");
+      if (!token) {
+        throw new Error("Provider authentication required");
+      }
+      console.log("Sending notification with token:", token); // Debug token
+      const postData = {
+        providerId,
+        storageImage: imagePreview || "",
+        productTypes: productTypes.trim(),
+        priceOffering: priceOffering.trim(),
+        storageCapacity: "",
+        availableFrom: new Date(),
+        availableTo: null,
+        description: "",
+        isActive: true,
+      };
 
-      // Here you can implement the actual notification API call
-      // For now, just showing an alert with improved messaging
-      const notificationMessage = `Storage notification sent successfully to ${
-        selectedShops.length
-      } consumer(s):\n\n${selectedShops.join("\n")}`;
+      console.log("Post data being sent:", postData); // Debug post data
+
+      // Store the post in MongoDB with authentication
+      const storeResponse = await axios.post(
+        "http://localhost:5000/api/providers/post-storage",
+        postData,
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (!storeResponse.data.success) {
+        throw new Error("Failed to store post data");
+      }
+
+      // Send notification to each selected consumer
+      const notificationPromises = selectedConsumers.map(async (consumerId) => {
+        const roomId = `${providerId}_${consumerId}`;
+        const notificationContent = {
+          type: "storageNotification",
+          content: {
+            title: "New Storage Offer",
+            description: `Storage available for ${productTypes.trim()} at ${priceOffering.trim()}.`,
+            image: imagePreview || null,
+            timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+          },
+        };
+
+        await axios.post(
+          `http://localhost:5000/api/providers/send-notification/${consumerId}`,
+          { roomId, message: notificationContent },
+          {
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+      });
+
+      await Promise.all(notificationPromises);
+
+      const notificationMessage = `Storage notification sent successfully to ${selectedConsumers.length} consumer(s)`;
       alert(notificationMessage);
 
-      // Clear selections after successful notification
       setSelectedConsumers([]);
     } catch (error) {
-      console.error("Error sending notifications:", error);
-      alert("Failed to send notifications. Please try again.");
+      console.error("Error sending notifications:", error.response ? error.response.data : error.message);
+      alert("Failed to send notifications. Please try again. Details: " + (error.response ? error.response.data.message : error.message));
     }
   };
 
@@ -184,7 +228,6 @@ const PostStorage = () => {
   };
 
   const getMatchingIndicator = (consumerProducts) => {
-    // Only show matching indicators if AI is enhanced
     if (!aiEnhanced) {
       return null;
     }
@@ -232,19 +275,14 @@ const PostStorage = () => {
 
   return (
     <div className="post-storage-page w-screen h-screen bg-gradient-to-br from-blue-50 to-yellow-50 flex flex-col overflow-hidden">
-      {/* Header */}
       <div className="fixed top-0 left-0 w-full z-50">
         <Header />
       </div>
 
-      {/* Main content area */}
       <div className="flex-1 pt-[90px] pb-[20px] flex flex-col lg:flex-row gap-5 max-w-7xl mx-auto px-5 w-full overflow-hidden">
-        {/* Form Container */}
         <div className="bg-white rounded-3xl shadow-2xl w-full lg:w-[450px] flex-shrink-0 h-[calc(100vh-130px)] overflow-hidden flex flex-col relative border-2 border-blue-100 animate-fade-up">
-          {/* Top gradient bar */}
           <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-600 to-blue-800 rounded-t-3xl"></div>
 
-          {/* Fixed Header */}
           <div className="p-6 pb-2 bg-white">
             <div className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-50 to-yellow-50 text-blue-800 px-3 py-1 rounded-lg text-sm font-semibold mb-4">
               Storage Provider
@@ -255,9 +293,7 @@ const PostStorage = () => {
             </h1>
           </div>
 
-          {/* Scrollable Content */}
           <div className="flex-1 overflow-y-auto custom-scrollbar px-6 lg:px-8 pb-6">
-            {/* Image Upload Section */}
             <div className="mb-6">
               <label className="block mb-2 font-semibold text-blue-800 text-sm">
                 Storage Image
@@ -314,7 +350,6 @@ const PostStorage = () => {
               )}
             </div>
 
-            {/* Product Types */}
             <div className="mb-6">
               <label
                 htmlFor="productTypes"
@@ -327,7 +362,6 @@ const PostStorage = () => {
                 value={productTypes}
                 onChange={(e) => {
                   setProductTypes(e.target.value);
-                  // Clear validation error when user starts typing
                   if (validationErrors.productTypes) {
                     setValidationErrors((prev) => ({
                       ...prev,
@@ -354,7 +388,6 @@ const PostStorage = () => {
               </div>
             </div>
 
-            {/* Price Offering */}
             <div className="mb-6">
               <label
                 htmlFor="priceOffering"
@@ -368,7 +401,6 @@ const PostStorage = () => {
                 value={priceOffering}
                 onChange={(e) => {
                   setPriceOffering(e.target.value);
-                  // Clear validation error when user starts typing
                   if (validationErrors.priceOffering) {
                     setValidationErrors((prev) => ({
                       ...prev,
@@ -390,7 +422,6 @@ const PostStorage = () => {
               )}
             </div>
 
-            {/* Find Consumers Button */}
             <button
               type="button"
               onClick={findConsumers}
@@ -409,13 +440,10 @@ const PostStorage = () => {
           </div>
         </div>
 
-        {/* Consumers Container */}
         {showConsumers && (
           <div className="bg-white rounded-3xl shadow-2xl flex-1 h-[calc(100vh-130px)] overflow-hidden flex flex-col relative border-2 border-yellow-100 animate-slide-in-right">
-            {/* Top gradient bar */}
             <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-yellow-500 to-orange-600 rounded-t-3xl"></div>
 
-            {/* Fixed Header */}
             <div className="p-6 pt-4 pb-2 border-b border-gray-200 bg-white sticky top-0 z-10">
               <div className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-50 to-yellow-50 text-blue-800 px-3 py-1 rounded-lg text-sm font-semibold mb-2">
                 Matched Partners
@@ -426,10 +454,8 @@ const PostStorage = () => {
               </h2>
             </div>
 
-            {/* Scrollable Content */}
             <div className="flex-1 overflow-y-auto custom-scrollbar p-6 lg:p-8">
               <div className="space-y-4">
-                {/* Matching Statistics */}
                 {matchingStats && (
                   <div className="bg-gradient-to-r from-blue-50 to-yellow-50 rounded-lg p-3 mb-4 border border-blue-200">
                     <div className="text-sm text-blue-800">
@@ -460,7 +486,6 @@ const PostStorage = () => {
                   </div>
                 )}
 
-                {/* Selection Controls */}
                 {consumers.length > 0 && (
                   <div className="flex justify-between items-center mb-4 bg-slate-50 rounded-lg p-2">
                     <div className="text-sm text-slate-600">
@@ -577,19 +602,16 @@ const PostStorage = () => {
                       })}
                     </div>
 
-                    {/* Notification Button (now scrollable) */}
-                    {consumers.length > 0 && (
-                      <div className="pt-6">
-                        <button
-                          onClick={sendNotification}
-                          disabled={selectedConsumers.length === 0}
-                          className="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white py-3 rounded-xl font-semibold hover:-translate-y-0.5 hover:shadow-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                        >
-                          Send Notification ({selectedConsumers.length}{" "}
-                          selected)
-                        </button>
-                      </div>
-                    )}
+                    <div className="pt-6">
+                      <button
+                        onClick={sendNotification}
+                        disabled={selectedConsumers.length === 0}
+                        className="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white py-3 rounded-xl font-semibold hover:-translate-y-0.5 hover:shadow-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                      >
+                        Send Notification ({selectedConsumers.length}{" "}
+                        selected)
+                      </button>
+                    </div>
                   </>
                 ) : (
                   <div className="text-center text-slate-500 py-10">

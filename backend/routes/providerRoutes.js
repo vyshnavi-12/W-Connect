@@ -4,11 +4,45 @@ const { PendingRequest, Consumer } = require("../models/Consumer");
 const { protect } = require("../middleware/authMiddleware");
 const {
   postStockAndFindConsumers,
+  findProviders,
 } = require("../controllers/providerController");
+const PostStorage = require("../models/PostStorage");
+const ChatMessage = require("../models/ChatMessage");
 
 // Post stock and find matching consumers
 router.post("/post-stock", protect, postStockAndFindConsumers);
-const ChatMessage = require("../models/ChatMessage");
+
+// Store post storage data and send notifications
+router.post("/post-storage", protect, async (req, res) => {
+  try {
+    console.log("User from token:", req.user); // Debug user object
+    if (req.user.role !== "provider") {
+      console.log("Role check failed:", req.user.role);
+      return res.status(403).json({ success: false, message: "Forbidden: Only providers can post storage" });
+    }
+
+    const { providerId, storageImage, productTypes, priceOffering, storageCapacity, availableFrom, availableTo, description, isActive } = req.body;
+
+    const newPost = new PostStorage({
+      providerId,
+      storageImage,
+      productTypes,
+      priceOffering,
+      storageCapacity,
+      availableFrom,
+      availableTo,
+      description,
+      isActive,
+    });
+
+    await newPost.save();
+
+    res.status(200).json({ success: true, message: "Post stored successfully", postId: newPost._id });
+  } catch (error) {
+    console.error("Error storing post:", error);
+    res.status(500).json({ success: false, message: "Failed to store post data", error: error.message });
+  }
+});
 
 // Get chat messages with a specific consumer
 router.get("/chat-messages/:consumerId", protect, async (req, res) => {
@@ -46,12 +80,10 @@ router.get("/pending-requests/:providerId", protect, async (req, res) => {
     console.log("Request user ID:", req.user.id);
     console.log("Provider ID from params:", providerId);
 
-    // Validate providerId
     if (!providerId || providerId === "undefined") {
       return res.status(400).json({ message: "Invalid provider ID" });
     }
 
-    // First check all requests for this provider (for debugging)
     const allRequestsForProvider = await PendingRequest.find({
       connectedProvider: providerId
     }).lean();
@@ -85,7 +117,6 @@ router.post("/accept-request/:requestId", protect, async (req, res) => {
   try {
     console.log("Accepting request with ID:", requestId);
 
-    // Fetch pending request with secretCode
     const pendingRequest = await PendingRequest.findById(requestId).select(
       "+secretCode"
     );
@@ -101,17 +132,15 @@ router.post("/accept-request/:requestId", protect, async (req, res) => {
       latitude: pendingRequest.latitude,
       longitude: pendingRequest.longitude,
       email: pendingRequest.email,
-      secretCode: !!pendingRequest.secretCode, // Log presence of secretCode
+      secretCode: !!pendingRequest.secretCode,
     });
 
-    // Verify the provider is authorized for this request
     if (pendingRequest.connectedProvider.toString() !== req.user.id) {
       return res
         .status(403)
         .json({ message: "Not authorized to accept this request" });
     }
 
-    // Strict validation of required fields
     if (
       !pendingRequest.location ||
       typeof pendingRequest.location !== "string" ||
@@ -136,18 +165,17 @@ router.post("/accept-request/:requestId", protect, async (req, res) => {
       });
     }
 
-    // Create new consumer with original location and coordinates from pending request
     const newConsumer = new Consumer({
       shopName: pendingRequest.shopName,
-      location: pendingRequest.location, // Keep original user-entered location
+      location: pendingRequest.location,
       coordinates: {
         type: "Point",
-        coordinates: [pendingRequest.longitude, pendingRequest.latitude], // [longitude, latitude]
+        coordinates: [pendingRequest.longitude, pendingRequest.latitude],
       },
       latitude: pendingRequest.latitude,
       longitude: pendingRequest.longitude,
       email: pendingRequest.email,
-      secretCode: pendingRequest.secretCode, // Include secretCode
+      secretCode: pendingRequest.secretCode,
       productDetails: pendingRequest.productDetails || [],
       needsStorage: pendingRequest.needsStorage || false,
       connectedProvider: pendingRequest.connectedProvider,
@@ -197,7 +225,6 @@ router.patch("/pending-requests/reject/:id", protect, async (req, res) => {
       return res.status(404).json({ message: "Request not found" });
     }
 
-    // Verify the provider is authorized for this request
     if (pendingRequest.connectedProvider.toString() !== req.user.id) {
       return res
         .status(403)
@@ -243,7 +270,6 @@ router.get("/connected-consumers/:providerId", protect, async (req, res) => {
       });
     }
 
-    // Validate providerId
     if (!providerId || providerId === "undefined") {
       return res.status(400).json({ message: "Invalid provider ID" });
     }
@@ -260,8 +286,39 @@ router.get("/connected-consumers/:providerId", protect, async (req, res) => {
   }
 });
 
+// Send notification to a specific consumer
+router.post("/send-notification/:consumerId", protect, async (req, res) => {
+  try {
+    if (req.user.role !== "provider") {
+      return res.status(403).json({ message: "Not authorized as a provider" });
+    }
+
+    const { roomId, message } = req.body;
+    const providerId = req.user.id;
+    const consumerId = req.params.consumerId;
+
+    if (!roomId || !message || !consumerId) {
+      return res.status(400).json({ message: "Missing required fields" });
+    }
+
+    const newMessage = new ChatMessage({
+      roomId,
+      sender: "provider",
+      content: JSON.stringify(message),
+      time: message.timestamp,
+      status: "sent",
+    });
+
+    await newMessage.save();
+
+    res.status(200).json({ success: true, message: "Notification sent" });
+  } catch (error) {
+    console.error("Error sending notification:", error);
+    res.status(500).json({ message: "Failed to send notification", error: error.message });
+  }
+});
+
 // Find providers functionality
-const { findProviders } = require("../controllers/providerController");
 router.get("/", findProviders);
 
 // Debug endpoint to check all pending requests (remove in production)
